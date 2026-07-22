@@ -123,6 +123,7 @@ func (c *Config) AllBackends() []Backend {
 	}
 	sort.Strings(names)
 
+	// fix to consider may be later -> using len(c.Pools), using len(allbackends) will be optimal for capacity, may be first calculate count of allbackends and use that as capacity.
 	out := make([]Backend, 0, len(c.Pools))
 	for _, name := range names {
 		out = append(out, c.Pools[name]...)
