@@ -13,6 +13,7 @@ import (
 )
 
 //	default values for optional settings
+//
 // must satisfy @validate.go
 const (
 	defaultBalancer = AlgRoundRobin
@@ -33,10 +34,8 @@ const (
 	defaultWeight = 1
 )
 
-
-
 // Prepares config : parse -> default -> validate , resolve TLS keypair
-// returned *Config -> ready to publish to store 
+// returned *Config -> ready to publish to store
 func Load(path string) (*Config, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
@@ -120,9 +119,7 @@ func setDefaultDuration(d *Duration, def_value time.Duration) {
 	}
 }
 
-
-
-// Resolves the keypair if configured 
+// Resolves the keypair if configured
 func (c *Config) loadTLS() error {
 	if c.TLS == nil {
 		return nil
