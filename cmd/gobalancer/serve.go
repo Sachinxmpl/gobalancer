@@ -44,11 +44,10 @@ func Serve(args []string) error {
 		"backends", len(cfg.AllBackends()),
 	)
 
+	//todo
+	// start listenr -> takes ctx, store, returns something with a ShutDown(context.Context) error method
 
-	//todo 
-	// start listenr -> takes ctx, store, returns something with a ShutDown(context.Context) error method 
-
-	<- ctx.Done()
+	<-ctx.Done()
 	stop()
 
 	drain := store.Load().Timeouts.Drain.Std()
@@ -57,15 +56,16 @@ func Serve(args []string) error {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), drain)
 	defer cancel()
 
-	_= shutdownCtx
+	_ = shutdownCtx
 
 	log.Info("stopped")
 
 	return nil
 }
 
-// todo 
+// todo
 func connLogger(base *slog.Logger, id uint64, client string) *slog.Logger {
 	return base.With("conn_id", id, "client", client)
 }
-var _= connLogger
+
+var _ = connLogger

@@ -7,10 +7,9 @@ import (
 	"strings"
 )
 
-
-func newLogger(level, format string) (*slog.Logger, error){
+func newLogger(level, format string) (*slog.Logger, error) {
 	var lvl slog.Level
-	switch strings.ToLower(level){
+	switch strings.ToLower(level) {
 	case "debug":
 		lvl = slog.LevelDebug
 	case "info":
@@ -26,16 +25,16 @@ func newLogger(level, format string) (*slog.Logger, error){
 	opts := &slog.HandlerOptions{Level: lvl}
 
 	var h slog.Handler
-	switch strings.ToLower(format){
+	switch strings.ToLower(format) {
 	case "json":
 		h = slog.NewJSONHandler(os.Stderr, opts)
 	case "text":
 		h = slog.NewTextHandler(os.Stderr, opts)
 	default:
-		return nil, fmt.Errorf("unkown log format, %q (want json or text)", format)
+		return nil, fmt.Errorf("unknown log format, %q (want json or text)", format)
 	}
 
 	logger := slog.New(h)
 	slog.SetDefault(logger)
-	return logger , nil 
+	return logger, nil
 }
