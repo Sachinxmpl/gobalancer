@@ -14,7 +14,7 @@ import (
 
 //	default values for optional settings
 //
-// must satisfy @validate.go
+// must satisfy Validate.go
 const (
 	defaultBalancer = AlgRoundRobin
 
