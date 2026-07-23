@@ -1,7 +1,10 @@
 doc.md
 doc2.md
 
+# build output 
 bin/
-*.prof
 
+# profiling and coverage
+coverage.html
+*.prof
 coverage.out
