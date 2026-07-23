@@ -4,3 +4,4 @@ doc2.md
 bin/
 *.prof
 
+coverage.out
