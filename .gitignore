@@ -8,3 +8,5 @@ bin/
 coverage.html
 *.prof
 coverage.out
+
+test.go
