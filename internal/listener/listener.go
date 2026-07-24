@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Sachinxmpl/gobalancer/internal/config"
 	"log/slog"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
+	
+	"github.com/Sachinxmpl/gobalancer/internal/config"
 )
 
 const (
@@ -90,6 +91,7 @@ func (s *Server) acceptLoop() {
 		// Shutdown may have started between accept returning and here,
 		if !s.track(conn) {
 			conn.Close()
+			continue
 		}
 
 		s.wg.Add(1)

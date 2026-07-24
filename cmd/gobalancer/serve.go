@@ -45,8 +45,8 @@ func Serve(args []string) error {
 	)
 
 	srv := listener.New(cfg.Listen, store, log)
-	if err := srv.Start(); err != nil{
-		return err 
+	if err := srv.Start(); err != nil {
+		return err
 	}
 
 	<-ctx.Done()
@@ -58,8 +58,8 @@ func Serve(args []string) error {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), drain)
 	defer cancel()
 
-	if err := srv.ShutDown(shutdownCtx); err != nil{
-		log.Warn("drain didnot complete cleanly", "err", err)
+	if err := srv.ShutDown(shutdownCtx); err != nil {
+		log.Warn("drain did not complete cleanly", "err", err)
 	}
 
 	log.Info("stopped")
