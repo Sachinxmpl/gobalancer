@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"flag"
-	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/Sachinxmpl/gobalancer/internal/config"
+	"github.com/Sachinxmpl/gobalancer/internal/listener"
 )
 
 func Serve(args []string) error {
@@ -44,8 +44,10 @@ func Serve(args []string) error {
 		"backends", len(cfg.AllBackends()),
 	)
 
-	//todo
-	// start listenr -> takes ctx, store, returns something with a ShutDown(context.Context) error method
+	srv := listener.New(cfg.Listen, store, log)
+	if err := srv.Start(); err != nil{
+		return err 
+	}
 
 	<-ctx.Done()
 	stop()
@@ -56,16 +58,10 @@ func Serve(args []string) error {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), drain)
 	defer cancel()
 
-	_ = shutdownCtx
+	if err := srv.ShutDown(shutdownCtx); err != nil{
+		log.Warn("drain didnot complete cleanly", "err", err)
+	}
 
 	log.Info("stopped")
-
 	return nil
 }
-
-// todo
-func connLogger(base *slog.Logger, id uint64, client string) *slog.Logger {
-	return base.With("conn_id", id, "client", client)
-}
-
-var _ = connLogger
