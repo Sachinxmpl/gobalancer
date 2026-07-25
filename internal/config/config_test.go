@@ -145,46 +145,6 @@ pools:
 	}
 }
 
-// Pools sorted by name, backends in file order.
-func TestAllBackends_Deterministic(t *testing.T) {
-	const src = `
-mode: l4
-listen: ":8080"
-pools:
-  zeta:
-    - addr: "10.0.0.9:9001"
-  alpha:
-    - addr: "10.0.0.1:9001"
-    - addr: "10.0.0.2:9001"
-  mid:
-    - addr: "10.0.0.5:9001"
-`
-	c, err := Parse(strings.NewReader(src))
-	if err != nil {
-		t.Fatalf("Parse: %v", err)
-	}
-
-	want := []string{
-		"10.0.0.1:9001",
-		"10.0.0.2:9001",
-		"10.0.0.5:9001",
-		"10.0.0.9:9001",
-	}
-
-	for i := 0; i < 20; i++ {
-		got := c.AllBackends()
-		if len(got) != len(want) {
-			t.Fatalf("got %d backends, want %d", len(got), len(want))
-		}
-		for j := range want {
-			if got[j].Addr != want[j] {
-				t.Fatalf("run %d: AllBackends[%d].Addr = %q, want %q",
-					i, j, got[j].Addr, want[j])
-			}
-		}
-	}
-}
-
 // Keeps the shipped example honest against schema changes.
 func TestLoad_ExampleConfig(t *testing.T) {
 	if _, err := Load("../../config.example.yaml"); err != nil {

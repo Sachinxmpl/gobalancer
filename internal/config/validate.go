@@ -185,7 +185,7 @@ func (c *Config) validateModeKeys() error {
 		if c.Routes != nil {
 			return errors.New("routes: not allowed in l4 mode (routing required l7)")
 		}
-		if len(c.Pools) != 1{
+		if len(c.Pools) != 1 {
 			return fmt.Errorf("pools: l4 mode requires exactly one pool, got %d", len(c.Pools))
 		}
 	}
@@ -195,7 +195,7 @@ func (c *Config) validateModeKeys() error {
 	return nil
 }
 
-func (c *Config) validateRoutes() error { 
+func (c *Config) validateRoutes() error {
 	for i, r := range c.Routes {
 		field := fmt.Sprintf("routes[%d]", i)
 
