@@ -181,8 +181,13 @@ func (c *Config) validatePools() error {
 
 // reject settings that belong to other mode
 func (c *Config) validateModeKeys() error {
-	if c.Mode == ModeL4 && c.Routes != nil {
-		return errors.New("routes: not allowed in l4 mode (routing requires l7)")
+	if c.Mode == ModeL4 {
+		if c.Routes != nil {
+			return errors.New("routes: not allowed in l4 mode (routing required l7)")
+		}
+		if len(c.Pools) != 1{
+			return fmt.Errorf("pools: l4 mode requires exactly one pool, got %d", len(c.Pools))
+		}
 	}
 	if c.Mode == ModeL7 && len(c.Routes) == 0 {
 		return errors.New("routes: at least one route is required in l7 mode")
@@ -190,7 +195,7 @@ func (c *Config) validateModeKeys() error {
 	return nil
 }
 
-func (c *Config) validateRoutes() error {
+func (c *Config) validateRoutes() error { 
 	for i, r := range c.Routes {
 		field := fmt.Sprintf("routes[%d]", i)
 
