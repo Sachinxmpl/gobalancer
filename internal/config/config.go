@@ -130,3 +130,12 @@ func (c *Config) AllBackends() []Backend {
 	}
 	return out
 }
+
+// Returns backends serving in l4 mode.
+// return on first iteration -> validation confirms there is exactly one entry
+func (c *Config) L4Pool() []Backend {
+	for _, backends := range c.Pools {
+		return backends
+	}
+	return nil
+}
