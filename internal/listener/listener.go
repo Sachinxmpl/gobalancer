@@ -10,7 +10,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Sachinxmpl/gobalancer/internal/balancer"
 	"github.com/Sachinxmpl/gobalancer/internal/config"
+	"github.com/Sachinxmpl/gobalancer/internal/proxy"
 )
 
 const (
@@ -19,9 +21,10 @@ const (
 )
 
 type Server struct {
-	addr  string
-	store *config.Store
-	log   *slog.Logger
+	addr     string
+	store    *config.Store
+	balancer balancer.Balancer
+	log      *slog.Logger
 
 	ln net.Listener
 	wg sync.WaitGroup
@@ -33,12 +36,13 @@ type Server struct {
 	connID atomic.Uint64
 }
 
-func New(addr string, store *config.Store, log *slog.Logger) *Server {
+func New(addr string, store *config.Store, bal balancer.Balancer, log *slog.Logger) *Server {
 	return &Server{
-		addr:  addr,
-		store: store,
-		log:   log,
-		conns: make(map[net.Conn]struct{}),
+		addr:     addr,
+		store:    store,
+		balancer: bal,
+		log:      log,
+		conns:    make(map[net.Conn]struct{}),
 	}
 }
 
@@ -122,8 +126,8 @@ func (s *Server) untrack(conn net.Conn) {
 	delete(s.conns, conn)
 }
 
-// serve client
-// todo (pick backend from pool, dial it, pipe byte both ways)
+// Serves one client connection: pick a backend, dial it , and replay bytes both ways until connection ends
+// exists when proxy.L4 returns, which its drain deadline bounds
 func (s *Server) handle(conn net.Conn) {
 	defer conn.Close()
 
@@ -131,12 +135,38 @@ func (s *Server) handle(conn net.Conn) {
 		"conn_id", s.connID.Add(1),
 		"client", conn.RemoteAddr().String(),
 	)
-	log.Debug("accepted")
+
+	cfg := s.store.Load()
+
+	pool := cfg.L4Pool()
+
+	backend, err := s.balancer.Pick(clientKey(conn), pool)
+	if err != nil {
+		log.Warn("no backend for connection", "err", err)
+		return
+	}
+	log = log.With("backend", backend.Addr)
+
+	up, err := net.DialTimeout("tcp", backend.Addr, cfg.Timeouts.Dial.Std())
+	if err != nil {
+		log.Warn("dial backend failed", "err", err)
+		return
+	}
+
+	log.Debug("proxying")
+	proxy.L4(conn, up, cfg.Timeouts.Drain.Std())
+}
+
+func clientKey(conn net.Conn) string {
+	host, _, err := net.SplitHostPort(conn.RemoteAddr().String())
+	if err != nil {
+		return conn.RemoteAddr().String()
+	}
+	return host
 }
 
 // Stops accepting new connections and waits for the live ones to finish
 // if ctx epires first remaining connections are force-closed and ctx.Err() returned
-
 func (s *Server) ShutDown(ctx context.Context) error {
 	s.mu.Lock()
 	if s.shutdown {

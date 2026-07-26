@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Sachinxmpl/gobalancer/internal/balancer"
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 	"go.uber.org/goleak"
 )
@@ -21,8 +22,9 @@ func testServer(t *testing.T) *Server {
 	t.Helper()
 
 	cfg := &config.Config{
-		Mode:   config.ModeL4,
-		Listen: "127.0.0.1:0",
+		Mode:     config.ModeL4,
+		Listen:   "127.0.0.1:0",
+		Balancer: config.AlgRoundRobin,
 		Pools: map[string][]config.Backend{
 			"default": {{
 				Addr: "127.0.0.1:9001", Weight: 1,
@@ -30,7 +32,9 @@ func testServer(t *testing.T) *Server {
 		},
 	}
 
-	s := New(cfg.Listen, config.NewStore(cfg), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	balancer, _ := balancer.New(cfg.Balancer)
+
+	s := New(cfg.Listen, config.NewStore(cfg), balancer, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err := s.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
@@ -66,7 +70,7 @@ func TestServer_AcceptsConnections(t *testing.T) {
 func TestServer_StartFailOnBusyAddress(t *testing.T) {
 	s := testServer(t)
 
-	copyServerOnSameAddr := New(s.Addr().String(), config.NewStore(&config.Config{}), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	copyServerOnSameAddr := New(s.Addr().String(), config.NewStore(&config.Config{}), s.balancer, slog.New(slog.NewTextHandler(io.Discard, nil)))
 
 	if err := copyServerOnSameAddr.Start(); err == nil {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
