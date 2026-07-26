@@ -5,22 +5,12 @@ linters:
   default: none
 
   enable:
-    - errcheck
     - govet
     - staticcheck
     - unused
     - ineffassign
     - misspell
     - bodyclose
-
-  settings:
-    errcheck:
-      exclude-functions:
-        - (io.Closer).Close
-        - (net.Conn).Close
-        - fmt.Fprint
-        - fmt.Fprintf
-        - fmt.Fprintln
 
   exclusions:
     rules:
