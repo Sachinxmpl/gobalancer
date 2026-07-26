@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/Sachinxmpl/gobalancer/internal/balancer"
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 	"github.com/Sachinxmpl/gobalancer/internal/listener"
 )
@@ -32,6 +33,11 @@ func Serve(args []string) error {
 
 	store := config.NewStore(cfg)
 
+	balancer, err := balancer.New(cfg.Balancer)
+	if err != nil {
+		return err
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -44,7 +50,7 @@ func Serve(args []string) error {
 		"backends", len(cfg.AllBackends()),
 	)
 
-	srv := listener.New(cfg.Listen, store, log)
+	srv := listener.New(cfg.Listen, store, balancer, log)
 	if err := srv.Start(); err != nil {
 		return err
 	}
