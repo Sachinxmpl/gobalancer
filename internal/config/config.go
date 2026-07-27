@@ -146,12 +146,12 @@ func (c *Config) L4Pool() []Backend {
 
 // Returns the address of every backend across every pool
 func (c *Config) BackendAddrs() []string {
-	allBackends := c.AllBackends()
-	alladdresses := make([]string, len(allBackends))
+	backends := c.AllBackends()
+	addrs := make([]string, len(backends))
 
-	for i, be := range allBackends {
-		alladdresses[i] = be.Addr
+	for i, be := range backends {
+		addrs[i] = be.Addr
 	}
 
-	return alladdresses
+	return addrs
 }

@@ -126,7 +126,7 @@ func TestServer_AcceptLoopExitsOnClosedListener(t *testing.T) {
 	}
 }
 
-// starts a loopback tcp echo server, returns its adddr and stop func
+// starts a loopback tcp echo server, returns its addr and stop func
 func echoBackend(t *testing.T) (addr string, stop func()) {
 	t.Helper()
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -134,7 +134,7 @@ func echoBackend(t *testing.T) (addr string, stop func()) {
 		t.Fatalf("listen: %v", err)
 	}
 	done := make(chan struct{})
-	// exists when ln is closed by stop
+	// exits when ln is closed by stop
 	go func() {
 		for {
 			c, err := ln.Accept()
@@ -142,7 +142,10 @@ func echoBackend(t *testing.T) (addr string, stop func()) {
 				close(done)
 				return
 			}
-			go io.Copy(c, c)
+			go func(c net.Conn) {
+				defer c.Close()
+				_, _ = io.Copy(c, c)
+			}(c)
 		}
 	}()
 
