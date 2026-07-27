@@ -11,6 +11,7 @@ import (
 
 	"github.com/Sachinxmpl/gobalancer/internal/balancer"
 	"github.com/Sachinxmpl/gobalancer/internal/config"
+	"github.com/Sachinxmpl/gobalancer/internal/health"
 	"go.uber.org/goleak"
 )
 
@@ -33,8 +34,9 @@ func testServer(t *testing.T) *Server {
 	}
 
 	balancer, _ := balancer.New(cfg.Balancer)
+	registry := health.NewRegistry()
 
-	s := New(cfg.Listen, config.NewStore(cfg), balancer, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	s := New(cfg.Listen, config.NewStore(cfg), balancer, registry, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err := s.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
@@ -70,7 +72,7 @@ func TestServer_AcceptsConnections(t *testing.T) {
 func TestServer_StartFailOnBusyAddress(t *testing.T) {
 	s := testServer(t)
 
-	copyServerOnSameAddr := New(s.Addr().String(), config.NewStore(&config.Config{}), s.balancer, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	copyServerOnSameAddr := New(s.Addr().String(), config.NewStore(&config.Config{}), s.balancer, s.registry, slog.New(slog.NewTextHandler(io.Discard, nil)))
 
 	if err := copyServerOnSameAddr.Start(); err == nil {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -122,4 +124,99 @@ func TestServer_AcceptLoopExitsOnClosedListener(t *testing.T) {
 	if err := s.ShutDown(ctx); err != nil && !errors.Is(err, net.ErrClosed) {
 		t.Fatalf("Shutdown after manual close: %v", err)
 	}
+}
+
+// starts a loopback tcp echo server, returns its adddr and stop func
+func echoBackend(t *testing.T) (addr string, stop func()) {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	done := make(chan struct{})
+	// exists when ln is closed by stop
+	go func() {
+		for {
+			c, err := ln.Accept()
+			if err != nil {
+				close(done)
+				return
+			}
+			go io.Copy(c, c)
+		}
+	}()
+
+	return ln.Addr().String(), func() { ln.Close(); <-done }
+}
+
+// With one dead backend among three, traffic stops going to it after `fall` failed dials
+func TestHandle_EvictsDeadBackend(t *testing.T) {
+	live1, stop1 := echoBackend(t)
+	live2, stop2 := echoBackend(t)
+	defer stop1()
+	defer stop2()
+
+	// dead backend
+	// bind a port, then immediately close it so dials refuse
+	deadLn, _ := net.Listen("tcp", "127.0.0.1:0")
+	dead := deadLn.Addr().String()
+	deadLn.Close()
+
+	cfg := &config.Config{
+		Mode:   config.ModeL4,
+		Listen: "127.0.0.1:0",
+		Health: config.Health{Passive: config.PassiveHealth{Fall: 3}},
+		Timeouts: config.Timeouts{
+			Dial:  config.Duration(200 * time.Millisecond),
+			Drain: config.Duration(time.Second),
+		},
+		Pools: map[string][]config.Backend{
+			"default": {
+				{Addr: live1, Weight: 1},
+				{Addr: dead, Weight: 1},
+				{Addr: live2, Weight: 1},
+			},
+		},
+	}
+
+	bal, err := balancer.New(config.AlgRoundRobin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reg := health.NewRegistry()
+	reg.Reconcile(cfg.BackendAddrs())
+
+	srv := New(cfg.Listen, config.NewStore(cfg), bal, reg, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	if err := srv.Start(); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		srv.ShutDown(ctx)
+	})
+
+	for i := 0; i < 15; i++ {
+		conn, err := net.Dial("tcp", srv.Addr().String())
+		if err != nil {
+			t.Fatalf("client dial %d: %v", i, err)
+		}
+		conn.SetDeadline(time.Now().Add(time.Second))
+		conn.Write([]byte("ping\n"))
+		buf := make([]byte, 5)
+		io.ReadFull(conn, buf)
+		conn.Close()
+	}
+
+	// dead backend must  be evicted.
+	if reg.Get(dead).Admits() {
+		t.Errorf("dead backend still admits traffic after %d connections; want evicted", 15)
+	}
+	// live ones must still be healthy.
+	if !reg.Get(live1).Admits() || !reg.Get(live2).Admits() {
+		t.Error("a live backend was wrongly evicted")
+	}
+
 }

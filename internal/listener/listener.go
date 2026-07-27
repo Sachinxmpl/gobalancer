@@ -12,6 +12,7 @@ import (
 
 	"github.com/Sachinxmpl/gobalancer/internal/balancer"
 	"github.com/Sachinxmpl/gobalancer/internal/config"
+	"github.com/Sachinxmpl/gobalancer/internal/health"
 	"github.com/Sachinxmpl/gobalancer/internal/proxy"
 )
 
@@ -24,6 +25,7 @@ type Server struct {
 	addr     string
 	store    *config.Store
 	balancer balancer.Balancer
+	registry *health.Registry
 	log      *slog.Logger
 
 	ln net.Listener
@@ -36,11 +38,12 @@ type Server struct {
 	connID atomic.Uint64
 }
 
-func New(addr string, store *config.Store, bal balancer.Balancer, log *slog.Logger) *Server {
+func New(addr string, store *config.Store, bal balancer.Balancer, reg *health.Registry, log *slog.Logger) *Server {
 	return &Server{
 		addr:     addr,
 		store:    store,
 		balancer: bal,
+		registry: reg,
 		log:      log,
 		conns:    make(map[net.Conn]struct{}),
 	}
@@ -126,7 +129,18 @@ func (s *Server) untrack(conn net.Conn) {
 	delete(s.conns, conn)
 }
 
-// Serves one client connection: pick a backend, dial it , and replay bytes both ways until connection ends
+// Builds new slice of healthy backends
+func healthyBackends(pool []config.Backend, reg *health.Registry) []config.Backend {
+	out := make([]config.Backend, 0, len(pool))
+	for _, b := range pool {
+		if reg.Get(b.Addr).Admits() {
+			out = append(out, b)
+		}
+	}
+	return out
+}
+
+// Serves one client connection: pick a healthy backend, dial it , and replay bytes both ways until connection ends
 // exists when proxy.L4 returns, which its drain deadline bounds
 func (s *Server) handle(conn net.Conn) {
 	defer conn.Close()
@@ -138,7 +152,7 @@ func (s *Server) handle(conn net.Conn) {
 
 	cfg := s.store.Load()
 
-	pool := cfg.L4Pool()
+	pool := healthyBackends(cfg.L4Pool(), s.registry)
 
 	backend, err := s.balancer.Pick(clientKey(conn), pool)
 	if err != nil {
@@ -149,9 +163,12 @@ func (s *Server) handle(conn net.Conn) {
 
 	up, err := net.DialTimeout("tcp", backend.Addr, cfg.Timeouts.Dial.Std())
 	if err != nil {
+		s.registry.Get(backend.Addr).ReportFailure(cfg.Health.Passive.Fall)
 		log.Warn("dial backend failed", "err", err)
 		return
 	}
+
+	s.registry.Get(backend.Addr).ReportSuccess()
 
 	log.Debug("proxying")
 	proxy.L4(conn, up, cfg.Timeouts.Drain.Std())
