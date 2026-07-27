@@ -9,6 +9,7 @@ import (
 
 	"github.com/Sachinxmpl/gobalancer/internal/balancer"
 	"github.com/Sachinxmpl/gobalancer/internal/config"
+	"github.com/Sachinxmpl/gobalancer/internal/health"
 	"github.com/Sachinxmpl/gobalancer/internal/listener"
 )
 
@@ -38,6 +39,9 @@ func Serve(args []string) error {
 		return err
 	}
 
+	registry := health.NewRegistry()
+	registry.Reconcile(cfg.BackendAddrs())
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -50,7 +54,7 @@ func Serve(args []string) error {
 		"backends", len(cfg.AllBackends()),
 	)
 
-	srv := listener.New(cfg.Listen, store, balancer, log)
+	srv := listener.New(cfg.Listen, store, balancer, registry, log)
 	if err := srv.Start(); err != nil {
 		return err
 	}
