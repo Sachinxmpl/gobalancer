@@ -123,8 +123,12 @@ func (c *Config) AllBackends() []Backend {
 	}
 	sort.Strings(names)
 
-	// fix to consider may be later -> using len(c.Pools), using len(allbackends) will be optimal for capacity, may be first calculate count of allbackends and use that as capacity.
-	out := make([]Backend, 0, len(c.Pools))
+	count := 0
+	for _, backends := range c.Pools {
+		count += len(backends)
+	}
+
+	out := make([]Backend, 0, count)
 	for _, name := range names {
 		out = append(out, c.Pools[name]...)
 	}
@@ -138,4 +142,16 @@ func (c *Config) L4Pool() []Backend {
 		return backends
 	}
 	return nil
+}
+
+// Returns the address of every backend across every pool
+func (c *Config) BackendAddrs() []string {
+	allBackends := c.AllBackends()
+	alladdresses := make([]string, len(allBackends))
+
+	for i, be := range allBackends {
+		alladdresses[i] = be.Addr
+	}
+
+	return alladdresses
 }
