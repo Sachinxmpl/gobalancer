@@ -130,15 +130,6 @@ func (s *Server) untrack(conn net.Conn) {
 }
 
 func healthyBackends(pool []config.Backend, reg *health.Registry) []config.Backend {
-	if reg == nil {
-		return pool
-	}
-	addrs := make([]string, 0, len(pool))
-	for _, b := range pool {
-		addrs = append(addrs, b.Addr)
-	}
-	reg.Reconcile(addrs)
-
 	out := make([]config.Backend, 0, len(pool))
 	for _, b := range pool {
 		if reg.Get(b.Addr).Admits() {
