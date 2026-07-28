@@ -40,7 +40,11 @@ func Serve(args []string) error {
 	}
 
 	registry := health.NewRegistry()
-	registry.Reconcile(cfg.BackendAddrs())
+	added, _ := registry.Reconcile(cfg.BackendAddrs())
+
+	mgr := health.NewManager(registry, cfg.Health, log)
+	mgr.Sync(added, nil)
+	defer mgr.Stop()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
