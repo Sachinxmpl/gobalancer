@@ -44,6 +44,7 @@ func Serve(args []string) error {
 
 	mgr := health.NewManager(registry, cfg.Health, log)
 	mgr.Sync(added, nil)
+	defer mgr.Stop()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -74,8 +75,6 @@ func Serve(args []string) error {
 	if err := srv.ShutDown(shutdownCtx); err != nil {
 		log.Warn("drain did not complete cleanly", "err", err)
 	}
-
-	mgr.Stop()
 
 	log.Info("stopped")
 	return nil

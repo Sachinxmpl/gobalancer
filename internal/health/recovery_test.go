@@ -33,7 +33,7 @@ func discardLog() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
 
-// An evicted backend that comes back is readmitted by the prober after cooldown + rise good probes â and never by anything else.
+// An evicted backend that comes back is readmitted by the prober after cooldown + rise good probes and never by anything else.
 func TestManager_ReadmitsRecoveredBackend(t *testing.T) {
 	// A backend we can turn on and off by opening/closing a listener.
 	ln, err := net.Listen("tcp", "127.0.0.1:0")

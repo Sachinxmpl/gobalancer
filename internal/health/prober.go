@@ -69,10 +69,10 @@ func (m *Manager) Sync(added, removed []string) {
 
 		m.wg.Add(1)
 
-		go func(addr string, st *State) {
+		go func(ctx context.Context, addr string, st *State) {
 			defer m.wg.Done()
 			m.probeLoop(ctx, addr, st)
-		}(addr, st)
+		}(ctx, addr, st)
 	}
 }
 
