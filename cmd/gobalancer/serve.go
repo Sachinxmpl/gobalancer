@@ -40,7 +40,10 @@ func Serve(args []string) error {
 	}
 
 	registry := health.NewRegistry()
-	registry.Reconcile(cfg.BackendAddrs())
+	added, _ := registry.Reconcile(cfg.BackendAddrs())
+
+	mgr := health.NewManager(registry, cfg.Health, log)
+	mgr.Sync(added, nil)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -71,6 +74,8 @@ func Serve(args []string) error {
 	if err := srv.ShutDown(shutdownCtx); err != nil {
 		log.Warn("drain did not complete cleanly", "err", err)
 	}
+
+	mgr.Stop()
 
 	log.Info("stopped")
 	return nil
