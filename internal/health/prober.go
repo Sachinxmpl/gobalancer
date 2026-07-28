@@ -111,6 +111,7 @@ func (m *Manager) probeOnce(ctx context.Context, addr string) bool {
 	conn.Close()
 	return true
 }
+
 // returns d with +- 10%, so all probers don't start together
 func withJitter(d time.Duration) time.Duration {
 	if d <= 0 {
