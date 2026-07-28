@@ -111,12 +111,8 @@ func (m *Manager) probeOnce(ctx context.Context, addr string) bool {
 	conn.Close()
 	return true
 }
-var jitterSeedOnce sync.Once
-
 // returns d with +- 10%, so all probers don't start together
 func withJitter(d time.Duration) time.Duration {
-	jitterSeedOnce.Do(func() { rand.Seed(time.Now().UnixNano()) })
-
 	if d <= 0 {
 		return time.Second
 	}
