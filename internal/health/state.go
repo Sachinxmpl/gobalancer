@@ -66,7 +66,6 @@ func (s *State) ReportFailure(fall int) {
 		s.evictedAt = time.Now()
 		s.fails = 0
 	}
-
 }
 
 // Passive path
@@ -127,5 +126,4 @@ func (s *State) ProbeResult(ok bool, rise int) {
 
 	// not enough successes
 	s.phase.Store(int32(Probation))
-
 }
