@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -71,8 +70,6 @@ func Serve(args []string) error {
 		srv = listener.New(cfg.Listen, store, balancer, registry, log)
 	case config.ModeL7:
 		srv = l7.New(cfg, store, balancer, registry, log)
-	default:
-		return fmt.Errorf("unknown mode %q", cfg.Mode)
 	}
 
 	if err := srv.Start(); err != nil {

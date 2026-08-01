@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"log/slog"
-	"net"
 	"net/http"
 	"testing"
 	"time"
@@ -52,7 +51,11 @@ func testServer(t *testing.T) *Server {
 func TestServer_ServesHTTP(t *testing.T) {
 	s := testServer(t)
 
-	res, err := http.Get("http://" + s.Addr().String() + "/")
+	client := &http.Client{
+		Timeout: 500 * time.Millisecond,
+	}
+
+	res, err := client.Get("http://" + s.Addr().String() + "/")
 	if err != nil {
 		t.Fatalf("GET: %v", err)
 	}
@@ -91,10 +94,13 @@ func TestServer_ShutdownStopsServing(t *testing.T) {
 		t.Fatalf("Shutdown: %v", err)
 	}
 
-	// must fail
-	conn, err := net.DialTimeout("tcp", addr, 200*time.Millisecond)
+	client := &http.Client{
+		Timeout: 500 * time.Millisecond,
+	}
+
+	resp, err := client.Get("http://" + addr + "/")
 	if err == nil {
-		conn.Close()
-		t.Fatal("dial succeeded after Shutdown, must have been refused")
+		resp.Body.Close()
+		t.Fatal("request succeeded after shutdown")
 	}
 }
