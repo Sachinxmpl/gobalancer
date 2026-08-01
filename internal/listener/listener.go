@@ -72,6 +72,8 @@ func (s *Server) Start() error {
 	return nil
 }
 
+// Addr reports the address actually bound (differs from the configured address
+// when the config asks for port 0). Valid only after a successful Start.
 func (s *Server) Addr() net.Addr {
 	return s.ln.Addr()
 }
@@ -82,7 +84,7 @@ func (s *Server) acceptLoop() {
 	for {
 		conn, err := s.ln.Accept()
 		if err != nil {
-			// listener closed by Shutdown -> only way ouf of loop, it not a failure
+			// listener closed by Shutdown -> only way out of loop, it not a failure
 			if errors.Is(err, net.ErrClosed) {
 				return
 			}
