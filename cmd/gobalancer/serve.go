@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,7 +12,13 @@ import (
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 	"github.com/Sachinxmpl/gobalancer/internal/health"
 	"github.com/Sachinxmpl/gobalancer/internal/listener"
+	"github.com/Sachinxmpl/gobalancer/internal/proxy/l7"
 )
+
+type server interface {
+	Start() error
+	ShutDown(context.Context) error
+}
 
 func Serve(args []string) error {
 	fs := flag.NewFlagSet("run", flag.ContinueOnError)
@@ -58,9 +65,14 @@ func Serve(args []string) error {
 		"backends", len(cfg.AllBackends()),
 	)
 
-	srv := listener.New(cfg.Listen, store, balancer, registry, log)
-	if err := srv.Start(); err != nil {
-		return err
+	var srv server
+	switch cfg.Mode {
+	case config.ModeL4:
+		srv = listener.New(cfg.Listen, store, balancer, registry, log)
+	case config.ModeL7:
+		srv = l7.New(cfg, store, balancer, registry, log)
+	default:
+		return fmt.Errorf("unknown mode %q", cfg.Mode)
 	}
 
 	<-ctx.Done()
