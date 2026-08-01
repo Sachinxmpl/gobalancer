@@ -75,6 +75,10 @@ func Serve(args []string) error {
 		return fmt.Errorf("unknown mode %q", cfg.Mode)
 	}
 
+	if err := srv.Start(); err != nil {
+		return err
+	}
+
 	<-ctx.Done()
 	stop()
 
