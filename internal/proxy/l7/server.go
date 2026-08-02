@@ -154,7 +154,7 @@ func route(cfg *config.Config, path string) (pool string, ok bool) {
 	return pool, ok
 }
 
-// related to a single conenction
+// related to a single connection
 var hopByHop = []string{
 	"Connection", "Proxy-Connection", "Keep-Alive", "Proxy-Authenticate",
 	"Proxy-Authorizatoin", "Te", "Trailer", "Transfer-Encoding", "Upgrade",

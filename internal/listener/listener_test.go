@@ -53,17 +53,57 @@ func testServer(t *testing.T) *Server {
 }
 
 func TestServer_AcceptsConnections(t *testing.T) {
-	s := testServer(t)
+	// The handler is a real proxy, so a connection is served by relaying to the
+	// backend — not closed on sight. Point at a live echo backend and prove a
+	// full round-trip rather than asserting an immediate EOF (which only held
+	// back when handle was a stub).
+	backendAddr, stopBackend := echoBackend(t)
+	defer stopBackend()
 
+	cfg := &config.Config{
+		Mode:     config.ModeL4,
+		Listen:   "127.0.0.1:0",
+		Balancer: config.AlgRoundRobin,
+		Timeouts: config.Timeouts{
+			Dial:  config.Duration(time.Second),
+			Drain: config.Duration(time.Second),
+		},
+		Pools: map[string][]config.Backend{
+			"default": {{Addr: backendAddr, Weight: 1}},
+		},
+	}
+	bal, _ := balancer.New(cfg.Balancer)
+	reg := health.NewRegistry()
+	reg.Reconcile(cfg.BackendAddrs())
+
+	s := New(cfg.Listen, config.NewStore(cfg), bal, reg,
+		slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err := s.Start(); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if err := s.ShutDown(ctx); err != nil {
+			t.Errorf("ShutDown: %v", err)
+		}
+	})
+
+	msg := []byte("ping\n")
 	for i := 0; i < 5; i++ {
 		conn, err := net.Dial("tcp", s.Addr().String())
 		if err != nil {
 			t.Fatalf("dial %d: %v", i, err)
 		}
-
-		conn.SetReadDeadline(time.Now().Add(2 * time.Second))
-		if _, err := io.ReadAll(conn); err != nil {
+		conn.SetDeadline(time.Now().Add(2 * time.Second))
+		if _, err := conn.Write(msg); err != nil {
+			t.Errorf("write %d: %v", i, err)
+		}
+		buf := make([]byte, len(msg))
+		if _, err := io.ReadFull(conn, buf); err != nil {
 			t.Errorf("read %d: %v", i, err)
+		} else if string(buf) != string(msg) {
+			t.Errorf("echo %d = %q, want %q", i, buf, msg)
 		}
 		conn.Close()
 	}
