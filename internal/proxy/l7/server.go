@@ -3,9 +3,11 @@ package l7
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Sachinxmpl/gobalancer/internal/balancer"
@@ -26,6 +28,8 @@ type Server struct {
 
 	httpSrv *http.Server
 	ln      net.Listener
+
+	transport *http.Transport
 }
 
 func New(cfg *config.Config, store *config.Store, bal balancer.Balancer, reg *health.Registry, log *slog.Logger) *Server {
@@ -45,6 +49,15 @@ func New(cfg *config.Config, store *config.Store, bal balancer.Balancer, reg *he
 		IdleTimeout:       cfg.Timeouts.Idle.Std(),
 		ErrorLog:          slog.NewLogLogger(log.Handler(), slog.LevelWarn),
 	}
+
+	s.transport = &http.Transport{
+		DialContext:           (&net.Dialer{Timeout: cfg.Timeouts.Dial.Std()}).DialContext,
+		MaxIdleConnsPerHost:   32,
+		IdleConnTimeout:       90 * time.Second,
+		ResponseHeaderTimeout: cfg.Timeouts.Read.Std(),
+		ForceAttemptHTTP2:     false,
+	}
+
 	return s
 }
 
@@ -71,8 +84,124 @@ func (s *Server) Start() error {
 	return nil
 }
 
+// Routes one request to a pool by path, picks a healthy be, and forwards request
+// Follows 4 http proxy rules
+// Clear RequestURI, strip hop-by-hop header, append X-Forwarded-For, Stream the body
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
+	cfg := s.store.Load()
+
+	// websocket/upgrade -> needs raw byte piping
+	if r.Header.Get("Upgrade") != "" {
+		http.Error(w, "upgrade not supported in l7 mode, use l4", http.StatusNotImplemented)
+		return
+	}
+
+	poolName, ok := route(cfg, r.URL.Path)
+	if !ok {
+		http.Error(w, "no route for path", http.StatusNotFound)
+		return
+	}
+
+	pool := balancer.HealthyBackends(cfg.Pools[poolName], s.registry)
+	backend, err := s.balancer.Pick(clientIP(r), pool)
+
+	if err != nil {
+		http.Error(w, "no healthy backends", http.StatusServiceUnavailable)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), cfg.Timeouts.Request.Std())
+	defer cancel()
+
+	out := r.Clone(ctx)
+	out.RequestURI = ""
+	out.URL.Scheme = "http"
+	out.URL.Host = backend.Addr
+	out.Host = r.Host
+
+	stripHopByHop(out.Header)
+	appendXForwardedFor(out, clientIP(r))
+
+	resp, err := s.transport.RoundTrip(out)
+
+	if err != nil {
+		// roundtrip error -> could not reach backend
+		s.registry.Get(backend.Addr).ReportFailure(cfg.Health.Passive.Fall)
+		http.Error(w, "bad gateway", http.StatusBadGateway)
+		return
+	}
+
+	defer resp.Body.Close()
+	s.registry.Get(backend.Addr).ReportSuccess()
+
+	stripHopByHop(resp.Header)
+	copyHeader(w.Header(), resp.Header)
+	w.WriteHeader(resp.StatusCode)
+	io.Copy(w, resp.Body)
+}
+
+// Finds the poll for path using longest-prefix match
+func route(cfg *config.Config, path string) (pool string, ok bool) {
+	best := -1
+	for _, r := range cfg.Routes {
+		p := r.Match.PathPrefix
+		if strings.HasPrefix(path, p) && len(p) > best {
+			best = len(p)
+			pool = r.Pool
+			ok = true
+		}
+	}
+	return pool, ok
+}
+
+// related to a single connection
+var hopByHop = []string{
+	"Connection", "Proxy-Connection", "Keep-Alive", "Proxy-Authenticate",
+	"Proxy-Authorization", "Te", "Trailer", "Transfer-Encoding", "Upgrade",
+}
+
+// Removes connection-scoped header, including any header names inside the Connection Header
+func stripHopByHop(h http.Header) {
+	for _, name := range h["Connection"] {
+		for tok := range strings.SplitSeq(name, ",") {
+			tok = strings.TrimSpace(tok)
+			if tok != "" {
+				h.Del(tok)
+			}
+		}
+	}
+
+	for _, name := range hopByHop {
+		h.Del(name)
+	}
+}
+
+// appends clientIP to the reques'ts forwarding trail, preserves addresses of any earlier hops
+func appendXForwardedFor(out *http.Request, clientIP string) {
+	if clientIP == "" {
+		return
+	}
+	if prior := out.Header.Get("X-Forwarded-For"); prior != "" {
+		clientIP = prior + ", " + clientIP
+	}
+	out.Header.Set("X-Forwarded-For", clientIP)
+}
+
+// Copies every header value from src to desk
+func copyHeader(dst, src http.Header) {
+	for k, vv := range src {
+		for _, v := range vv {
+			dst.Add(k, v)
+		}
+	}
+}
+
+func clientIP(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
 }
 
 // Addr reports the address actually bound (differs from the configured address
@@ -84,5 +213,7 @@ func (s *Server) Addr() net.Addr {
 // stops accepting new requests and wait for in-flight ones to finished
 // http.Server.Shudown() already implements drain
 func (s *Server) ShutDown(ctx context.Context) error {
-	return s.httpSrv.Shutdown(ctx)
+	err := s.httpSrv.Shutdown(ctx)
+	s.transport.CloseIdleConnections()
+	return err
 }

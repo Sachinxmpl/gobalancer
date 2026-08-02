@@ -131,16 +131,6 @@ func (s *Server) untrack(conn net.Conn) {
 	delete(s.conns, conn)
 }
 
-func healthyBackends(pool []config.Backend, reg *health.Registry) []config.Backend {
-	out := make([]config.Backend, 0, len(pool))
-	for _, b := range pool {
-		if reg.Get(b.Addr).Admits() {
-			out = append(out, b)
-		}
-	}
-	return out
-}
-
 // Serves one client connection: pick a healthy backend, dial it , and replay bytes both ways until connection ends
 // exists when proxy.L4 returns, which its drain deadline bounds
 func (s *Server) handle(conn net.Conn) {
@@ -153,7 +143,7 @@ func (s *Server) handle(conn net.Conn) {
 
 	cfg := s.store.Load()
 
-	pool := healthyBackends(cfg.L4Pool(), s.registry)
+	pool := balancer.HealthyBackends(cfg.L4Pool(), s.registry)
 
 	backend, err := s.balancer.Pick(clientKey(conn), pool)
 	if err != nil {
