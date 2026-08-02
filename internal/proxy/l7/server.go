@@ -2,6 +2,7 @@ package l7
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"log/slog"
@@ -68,6 +69,17 @@ func (s *Server) Start() error {
 	if err != nil {
 		return fmt.Errorf("listen on %s: %w", s.addr, err)
 	}
+
+	scheme := "http"
+	if s.store.Load().TLSCert != nil {
+		ln = tls.NewListener(ln, &tls.Config{
+			MinVersion: tls.VersionTLS12,
+			GetCertificate: func(chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
+				return s.store.Load().TLSCert, nil
+			},
+		})
+		scheme = "https"
+	}
 	s.ln = ln
 
 	//exists when: Shutdown (or close ) stops the server making Serve return
@@ -79,7 +91,7 @@ func (s *Server) Start() error {
 		}
 	}(ln)
 
-	s.log.Info("listening", "addr", ln.Addr().String(), "mode", "l7")
+	s.log.Info("listening", "addr", ln.Addr().String(), "mode", "l7", "scheme", scheme)
 
 	return nil
 }

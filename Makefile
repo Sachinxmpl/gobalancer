@@ -1,4 +1,4 @@
-.PHONY: all build test test-cover race vet fmt fmt-check lint tidy run check clean ci help
+.PHONY: all build test test-cover race vet fmt fmt-check lint tidy run check clean ci help devcert
 
 BINARY := bin/gobalancer
 PKG := ./...
@@ -21,7 +21,7 @@ vet:
 
 fmt:
 	gofmt -w ./cmd ./internal
-
+ 
 fmt-check:
 	@files=$$(gofmt -l ./cmd ./internal); \
 	if [ -n "$$files" ]; then \
@@ -46,6 +46,14 @@ ci: fmt-check vet test
 
 clean:
 	rm -rf bin coverage.out
+
+devcert:
+	@mkdir -p deploy
+	openssl req -x509 -newkey rsa:2048 -nodes \
+		-keyout deploy/dev.key -out deploy/dev.crt \
+		-days 365 -subj "/CN=localhost" \
+		-addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
+	@echo "dev cert written to deploy/dev.crt and deploy/dev.key"
 
 help:
 	@echo "Available targets:"
