@@ -157,7 +157,7 @@ func route(cfg *config.Config, path string) (pool string, ok bool) {
 // related to a single connection
 var hopByHop = []string{
 	"Connection", "Proxy-Connection", "Keep-Alive", "Proxy-Authenticate",
-	"Proxy-Authorizatoin", "Te", "Trailer", "Transfer-Encoding", "Upgrade",
+	"Proxy-Authorization", "Te", "Trailer", "Transfer-Encoding", "Upgrade",
 }
 
 // Removes connection-scoped header, including any header names inside the Connection Header
