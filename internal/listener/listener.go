@@ -131,8 +131,6 @@ func (s *Server) untrack(conn net.Conn) {
 	delete(s.conns, conn)
 }
 
-
-
 // Serves one client connection: pick a healthy backend, dial it , and replay bytes both ways until connection ends
 // exists when proxy.L4 returns, which its drain deadline bounds
 func (s *Server) handle(conn net.Conn) {
