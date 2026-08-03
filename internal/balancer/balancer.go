@@ -3,6 +3,7 @@ package balancer
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"sync/atomic"
 
 	"github.com/Sachinxmpl/gobalancer/internal/config"
@@ -21,6 +22,19 @@ type Balancer interface {
 	Pick(key string, pool []config.Backend) (*config.Backend, error)
 }
 
+func New(alg config.Algorithm) (Balancer, error) {
+	switch alg {
+	case config.AlgRoundRobin:
+		return &RoundRobin{}, nil
+	case config.AlgWeightedRR:
+		return NewWeightedRoundRobin(), nil
+	case config.AlgLeastConns, config.AlgConsistentHash:
+		return nil, fmt.Errorf("balancer %q: not implemented yet", alg)
+	default:
+		return nil, fmt.Errorf("balancer %q: unknown", alg)
+	}
+}
+
 type RoundRobin struct {
 	n atomic.Uint64
 }
@@ -35,15 +49,38 @@ func (r *RoundRobin) Pick(_ string, pool []config.Backend) (*config.Backend, err
 	return &pool[i], nil
 }
 
-func New(alg config.Algorithm) (Balancer, error) {
-	switch alg {
-	case config.AlgRoundRobin:
-		return &RoundRobin{}, nil
-	case config.AlgWeightedRR, config.AlgLeastConns, config.AlgConsistentHash:
-		return nil, fmt.Errorf("balancer %q: not implemented yet", alg)
-	default:
-		return nil, fmt.Errorf("balancer %q: unknown", alg)
+type WeightedRoundRobin struct {
+	mu      sync.Mutex
+	current map[string]int
+}
+
+func NewWeightedRoundRobin() *WeightedRoundRobin {
+	return &WeightedRoundRobin{current: make(map[string]int)}
+}
+
+func (w *WeightedRoundRobin) Pick(_ string, pool []config.Backend) (*config.Backend, error) {
+	if len(pool) == 0 {
+		return nil, ErrNoBackends
 	}
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	total := 0
+	best := -1
+	bestScore := 0
+	for i := range pool {
+		addr := pool[i].Addr
+		w.current[addr] += pool[i].Weight
+		total += pool[i].Weight
+
+		if best == -1 || w.current[addr] > bestScore {
+			best = i
+			bestScore = w.current[addr]
+		}
+	}
+	w.current[pool[best].Addr] -= total
+
+	return &pool[best], nil
 }
 
 func HealthyBackends(pool []config.Backend, reg *health.Registry) []config.Backend {
