@@ -5,6 +5,8 @@ import (
 	"slices"
 	"sort"
 	"strconv"
+	"sync"
+	"sync/atomic"
 
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 )
@@ -68,4 +70,49 @@ func fingerprint(pool []config.Backend) uint64 {
 		h.Write([]byte{0})
 	}
 	return h.Sum64()
+}
+
+type ConsistentHash struct {
+	vnodes int
+	mu     sync.Mutex
+	ring   atomic.Pointer[ring]
+}
+
+func NewConsistentHash(vnodes int) *ConsistentHash {
+	return &ConsistentHash{vnodes: vnodes}
+}
+
+func (c *ConsistentHash) Pick(key string, pool []config.Backend) (*config.Backend, error) {
+	if len(pool) == 0 {
+		return nil, ErrNoBackends
+	}
+	r := c.ringFor(pool)
+	addr, ok := r.lookup(key, fnv64a)
+	if !ok {
+		return nil, ErrNoBackends
+	}
+	for i := range pool {
+		if pool[i].Addr == addr {
+			return &pool[i], nil
+		}
+	}
+	return nil, ErrNoBackends
+}
+
+// Returns a ring for the current pool, rebuilding only when membership
+// changed. The common case (unchanged pool) is a lock-free atomic load.
+func (c *ConsistentHash) ringFor(pool []config.Backend) *ring {
+	fp := fingerprint(pool)
+	if r := c.ring.Load(); r != nil && r.fingerprint == fp {
+		return r
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if r := c.ring.Load(); r != nil && r.fingerprint == fp {
+		return r // another goroutine rebuilt it while we waited
+	}
+	r := buildRing(pool, c.vnodes, fnv64a)
+	r.fingerprint = fp
+	c.ring.Store(r)
+	return r
 }

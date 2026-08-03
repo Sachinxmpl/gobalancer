@@ -31,7 +31,7 @@ func New(alg config.Algorithm, counter ConnCounter) (Balancer, error) {
 		}
 		return NewLeastConnections(counter), nil
 	case config.AlgConsistentHash:
-		return nil, fmt.Errorf("balancer %q: not implemented yet", alg)
+		return NewConsistentHash(defaultVNodes), nil
 	default:
 		return nil, fmt.Errorf("balancer %q: unknown", alg)
 	}
