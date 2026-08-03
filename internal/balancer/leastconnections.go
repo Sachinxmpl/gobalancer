@@ -7,7 +7,6 @@ import (
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 )
 
-
 type ConnCounter interface {
 	Conns(addr string) int64
 }
