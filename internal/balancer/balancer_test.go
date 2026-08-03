@@ -96,3 +96,62 @@ func TestRoundRobin_ConcurrentDistribution(t *testing.T) {
 		}
 	}
 }
+
+// weightest RR tests
+
+func weightedPool(weights ...int) []config.Backend {
+	pool := make([]config.Backend, len(weights))
+	names := []string{"A", "B", "C", "D", "E"}
+	for i, w := range weights {
+		pool[i] = config.Backend{
+			Addr: names[i], Weight: w,
+		}
+	}
+	return pool
+}
+
+func TestWeightedRoundRobin_SmoothOrder(t *testing.T) {
+	pool := weightedPool(5, 1, 1) // A=5, B=1, C=1
+	wrr := NewWeightedRoundRobin()
+
+	want := []string{"A", "A", "B", "A", "C", "A", "A"}
+	for i, w := range want {
+		got, err := wrr.Pick("", pool)
+		if err != nil {
+			t.Fatalf("pick %d: %v", i, err)
+		}
+		if got.Addr != w {
+			t.Errorf("pick %d = %q, want %q (full sequence must be A A B A C A A)", i, got.Addr, w)
+		}
+	}
+}
+
+func TestWeightedRoundRobin_Distribution(t *testing.T) {
+	pool := weightedPool(3, 1) // A should get 3x B
+	wrr := NewWeightedRoundRobin()
+
+	counts := map[string]int{}
+	const picks = 4000 // multiple of total weight (4)
+	for i := 0; i < picks; i++ {
+		got, _ := wrr.Pick("", pool)
+		counts[got.Addr]++
+	}
+
+	// Exact ratio ->  the algorithm is periodic with period = total weight
+	if counts["A"] != 3000 || counts["B"] != 1000 {
+		t.Errorf("distribution A=%d B=%d, want A=3000 B=1000", counts["A"], counts["B"])
+	}
+}
+
+func TestWeightedRoundRobin_EqualWeightsIsRoundRobin(t *testing.T) {
+	pool := weightedPool(1, 1, 1)
+	wrr := NewWeightedRoundRobin()
+
+	want := []string{"A", "B", "C", "A", "B", "C"}
+	for i, w := range want {
+		got, _ := wrr.Pick("", pool)
+		if got.Addr != w {
+			t.Errorf("pick %d = %q, want %q", i, got.Addr, w)
+		}
+	}
+}
