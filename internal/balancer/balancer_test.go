@@ -2,6 +2,7 @@ package balancer
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 
@@ -194,5 +195,110 @@ func TestLeastConnections_TiesSpread(t *testing.T) {
 		if seen[addr] != 100 {
 			t.Errorf("tie spread: %q got %d, want 100 (herding on ties)", addr, seen[addr])
 		}
+	}
+}
+
+// Consistent Hashing
+func hashPool(n int) []config.Backend {
+	pool := make([]config.Backend, n)
+	for i := range pool {
+		pool[i] = config.Backend{Addr: fmt.Sprintf("10.0.0.%d:9000", i)}
+	}
+	return pool
+}
+
+func TestConsistentHash_MinimalRemap(t *testing.T) {
+	const (
+		backends = 10
+		keys     = 100_000
+	)
+	full := hashPool(backends)
+	reduced := full[:backends-1]
+
+	ch := NewConsistentHash(defaultVNodes)
+
+	// Two passes so the ring is built once per pool, not once per Pick.
+	// Alternating full/reduced inside one loop defeats the ring cache and
+	// rebuilds a 1500-vnode ring 200k times.
+	before := make([]string, keys)
+	for i := 0; i < keys; i++ {
+		b, _ := ch.Pick(fmt.Sprintf("client-%d", i), full)
+		before[i] = b.Addr
+	}
+
+	moved := 0
+	for i := 0; i < keys; i++ {
+		a, _ := ch.Pick(fmt.Sprintf("client-%d", i), reduced)
+		if a.Addr != before[i] {
+			moved++
+		}
+	}
+
+	frac := float64(moved) / float64(keys)
+	t.Logf("consistent hash: %.1f%% of keys moved when 1 of %d backends left (ideal ~%.1f%%)",
+		frac*100, backends, 100.0/backends)
+
+	// Should be near 1/N = 10%
+	if frac > 0.20 {
+		t.Errorf("remap fraction %.1f%% too high; consistent hashing should move ~1/N = 10%%", frac)
+	}
+}
+
+func TestConsistentHash_BeatsModN(t *testing.T) {
+	const backends, keys = 10, 100_000
+	modN := func(key string, n int) int { return int(fnv64a(key) % uint64(n)) }
+
+	moved := 0
+	for i := 0; i < keys; i++ {
+		key := fmt.Sprintf("client-%d", i)
+		if modN(key, backends) != modN(key, backends-1) {
+			moved++
+		}
+	}
+	frac := float64(moved) / float64(keys)
+	t.Logf("hash mod N: %.1f%% of keys moved (this is what consistent hashing avoids)", frac*100)
+	if frac < 0.80 {
+		t.Errorf("expected mod N to move ~90%%, got %.1f%%  check the contrast", frac*100)
+	}
+}
+
+func TestConsistentHash_Sticky(t *testing.T) {
+	pool := hashPool(5)
+	ch := NewConsistentHash(defaultVNodes)
+
+	for i := 0; i < 1000; i++ {
+		key := fmt.Sprintf("k%d", i)
+		a, _ := ch.Pick(key, pool)
+		b, _ := ch.Pick(key, pool)
+		if a.Addr != b.Addr {
+			t.Fatalf("key %q mapped to %q then %q not sticky", key, a.Addr, b.Addr)
+		}
+	}
+}
+
+func TestConsistentHash_Distribution(t *testing.T) {
+	for _, vnodes := range []int{10, 150} {
+		pool := hashPool(5)
+		r := buildRing(pool, vnodes, fnv64a)
+
+		counts := map[string]int{}
+		const keys = 50_000
+		for i := 0; i < keys; i++ {
+			addr, _ := r.lookup(fmt.Sprintf("k%d", i), fnv64a)
+			counts[addr]++
+		}
+
+		ideal := keys / len(pool)
+		maxDev := 0.0
+		for _, c := range counts {
+			dev := float64(c-ideal) / float64(ideal)
+			if dev < 0 {
+				dev = -dev
+			}
+			if dev > maxDev {
+				maxDev = dev
+			}
+		}
+		t.Logf("vnodes=%d: max deviation from even = %.1f%%", vnodes, maxDev*100)
 	}
 }
