@@ -51,18 +51,17 @@ func (s *State) Phase() Phase {
 	return Phase(s.phase.Load())
 }
 
-func (s *State) AddConn(){
+func (s *State) AddConn() {
 	s.conns.Add(1)
 }
 
-func (s *State) RemoveConn(){
-	s.conns.Add(1)
+func (s *State) RemoveConn() {
+	s.conns.Add(-1)
 }
 
-func (s *State) Conns() int64{
+func (s *State) Conns() int64 {
 	return s.conns.Load()
 }
-
 
 // Passive Path
 // Records that customer request to this be failed

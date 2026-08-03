@@ -122,6 +122,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	st := s.registry.Get(backend.Addr)
+	st.AddConn()
+	defer st.RemoveConn()
+
 	ctx, cancel := context.WithTimeout(r.Context(), cfg.Timeouts.Request.Std())
 	defer cancel()
 

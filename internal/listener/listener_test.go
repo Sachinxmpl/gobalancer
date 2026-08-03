@@ -33,8 +33,8 @@ func testServer(t *testing.T) *Server {
 		},
 	}
 
-	balancer, _ := balancer.New(cfg.Balancer)
 	registry := health.NewRegistry()
+	balancer, _ := balancer.New(cfg.Balancer, registry)
 
 	s := New(cfg.Listen, config.NewStore(cfg), balancer, registry, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err := s.Start(); err != nil {
@@ -72,9 +72,10 @@ func TestServer_AcceptsConnections(t *testing.T) {
 			"default": {{Addr: backendAddr, Weight: 1}},
 		},
 	}
-	bal, _ := balancer.New(cfg.Balancer)
 	reg := health.NewRegistry()
 	reg.Reconcile(cfg.BackendAddrs())
+
+	bal, _ := balancer.New(cfg.Balancer, reg)
 
 	s := New(cfg.Listen, config.NewStore(cfg), bal, reg,
 		slog.New(slog.NewTextHandler(io.Discard, nil)))
@@ -221,13 +222,13 @@ func TestHandle_EvictsDeadBackend(t *testing.T) {
 			},
 		},
 	}
+	reg := health.NewRegistry()
+	reg.Reconcile(cfg.BackendAddrs())
 
-	bal, err := balancer.New(config.AlgRoundRobin)
+	bal, err := balancer.New(config.AlgRoundRobin, reg)
 	if err != nil {
 		t.Fatal(err)
 	}
-	reg := health.NewRegistry()
-	reg.Reconcile(cfg.BackendAddrs())
 
 	srv := New(cfg.Listen, config.NewStore(cfg), bal, reg, slog.New(slog.NewTextHandler(io.Discard, nil)))
 

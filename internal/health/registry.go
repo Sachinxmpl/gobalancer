@@ -23,12 +23,10 @@ func (r *Registry) Get(addr string) *State {
 	return &State{}
 }
 
-
 // Returns live connecton count for addr
-func (r *Registry) Conns(addr string) int64{
+func (r *Registry) Conns(addr string) int64 {
 	return r.Get(addr).Conns()
 }
-
 
 // Makes the registry's backend match addrs( of newly published config)
 func (r *Registry) Reconcile(addrs []string) (added, removed []string) {
