@@ -37,6 +37,8 @@ type State struct {
 	fails     int
 	successes int
 	evictedAt time.Time
+
+	conns atomic.Int64
 }
 
 // Reports if BE is healthy
@@ -48,6 +50,19 @@ func (s *State) Admits() bool {
 func (s *State) Phase() Phase {
 	return Phase(s.phase.Load())
 }
+
+func (s *State) AddConn(){
+	s.conns.Add(1)
+}
+
+func (s *State) RemoveConn(){
+	s.conns.Add(1)
+}
+
+func (s *State) Conns() int64{
+	return s.conns.Load()
+}
+
 
 // Passive Path
 // Records that customer request to this be failed
