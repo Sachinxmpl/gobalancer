@@ -3,7 +3,7 @@
 mode: l4                     # l4  or l7 
 listen: "127.0.0.1:8080"
 
-balancer: weighted_round_robin # round_robin , weighted_round_robin
+balancer: least_connections # round_robin , weighted_round_robin
                              # least_connections consistent_hash
 
 timeouts:

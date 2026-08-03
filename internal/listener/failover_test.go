@@ -82,13 +82,13 @@ func TestFailoverTime(t *testing.T) {
 			},
 		},
 	}
+	reg := health.NewRegistry()
+	reg.Reconcile(cfg.BackendAddrs())
 
-	bal, err := balancer.New(config.AlgRoundRobin)
+	bal, err := balancer.New(config.AlgRoundRobin, reg)
 	if err != nil {
 		t.Fatal(err)
 	}
-	reg := health.NewRegistry()
-	reg.Reconcile(cfg.BackendAddrs())
 
 	srv := New(cfg.Listen, config.NewStore(cfg), bal, reg,
 		slog.New(slog.NewTextHandler(io.Discard, nil)))

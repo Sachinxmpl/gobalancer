@@ -26,9 +26,9 @@ func newL7(t *testing.T, cfg *config.Config) *Server {
 	if cfg.Timeouts.Request == 0 {
 		cfg.Timeouts.Request = config.Duration(5 * time.Second)
 	}
-	bal, _ := balancer.New(config.AlgRoundRobin)
 	reg := health.NewRegistry()
 	reg.Reconcile(cfg.BackendAddrs())
+	bal, _ := balancer.New(config.AlgRoundRobin, reg)
 
 	s := New(cfg, config.NewStore(cfg), bal, reg,
 		slog.New(slog.NewTextHandler(io.Discard, nil)))

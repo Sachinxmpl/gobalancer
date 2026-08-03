@@ -40,13 +40,13 @@ func Serve(args []string) error {
 
 	store := config.NewStore(cfg)
 
-	balancer, err := balancer.New(cfg.Balancer)
+	registry := health.NewRegistry()
+	added, _ := registry.Reconcile(cfg.BackendAddrs())
+
+	balancer, err := balancer.New(cfg.Balancer, registry)
 	if err != nil {
 		return err
 	}
-
-	registry := health.NewRegistry()
-	added, _ := registry.Reconcile(cfg.BackendAddrs())
 
 	mgr := health.NewManager(registry, cfg.Health, log)
 	mgr.Sync(added, nil)

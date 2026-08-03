@@ -155,3 +155,44 @@ func TestWeightedRoundRobin_EqualWeightsIsRoundRobin(t *testing.T) {
 		}
 	}
 }
+
+// Least Connections
+type fakeCounter map[string]int64
+
+func (f fakeCounter) Conns(addr string) int64 {
+	return f[addr]
+}
+
+func TestLeastConnections_PicksFewest(t *testing.T) {
+	pool := []config.Backend{{Addr: "a"}, {Addr: "b"}, {Addr: "c"}}
+	counts := fakeCounter{"a": 5, "b": 1, "c": 9}
+	lc := NewLeastConnections(counts)
+
+	for i := 0; i < 10; i++ {
+		got, err := lc.Pick("", pool)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.Addr != "b" {
+			t.Errorf("pick %d = %q, want b", i, got.Addr)
+		}
+	}
+}
+
+func TestLeastConnections_TiesSpread(t *testing.T) {
+	pool := []config.Backend{{Addr: "a"}, {Addr: "b"}, {Addr: "c"}}
+	counts := fakeCounter{"a": 0, "b": 0, "c": 0} // cold start all tied
+	lc := NewLeastConnections(counts)
+
+	seen := map[string]int{}
+	for i := 0; i < 300; i++ {
+		got, _ := lc.Pick("", pool)
+		seen[got.Addr]++
+	}
+	// round-robin tie-breaker must spread the cold-start burst
+	for _, addr := range []string{"a", "b", "c"} {
+		if seen[addr] != 100 {
+			t.Errorf("tie spread: %q got %d, want 100 (herding on ties)", addr, seen[addr])
+		}
+	}
+}

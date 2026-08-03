@@ -159,7 +159,10 @@ func (s *Server) handle(conn net.Conn) {
 		return
 	}
 
-	s.registry.Get(backend.Addr).ReportSuccess()
+	st := s.registry.Get(backend.Addr)
+	st.ReportSuccess()
+	st.AddConn()
+	defer st.RemoveConn()
 
 	log.Debug("proxying")
 	proxy.L4(conn, up, cfg.Timeouts.Drain.Std())
