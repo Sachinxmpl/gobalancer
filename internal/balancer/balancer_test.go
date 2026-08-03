@@ -258,7 +258,7 @@ func TestConsistentHash_BeatsModN(t *testing.T) {
 	frac := float64(moved) / float64(keys)
 	t.Logf("hash mod N: %.1f%% of keys moved (this is what consistent hashing avoids)", frac*100)
 	if frac < 0.80 {
-		t.Errorf("expected mod N to move ~90%%, got %.1f%% â check the contrast", frac*100)
+		t.Errorf("expected mod N to move ~90%%, got %.1f%%  check the contrast", frac*100)
 	}
 }
 
@@ -271,7 +271,7 @@ func TestConsistentHash_Sticky(t *testing.T) {
 		a, _ := ch.Pick(key, pool)
 		b, _ := ch.Pick(key, pool)
 		if a.Addr != b.Addr {
-			t.Fatalf("key %q mapped to %q then %q â not sticky", key, a.Addr, b.Addr)
+			t.Fatalf("key %q mapped to %q then %q not sticky", key, a.Addr, b.Addr)
 		}
 	}
 }
