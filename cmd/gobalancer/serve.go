@@ -12,6 +12,7 @@ import (
 	"github.com/Sachinxmpl/gobalancer/internal/health"
 	"github.com/Sachinxmpl/gobalancer/internal/listener"
 	"github.com/Sachinxmpl/gobalancer/internal/proxy/l7"
+	"github.com/Sachinxmpl/gobalancer/internal/reload"
 )
 
 type server interface {
@@ -75,6 +76,23 @@ func Serve(args []string) error {
 	if err := srv.Start(); err != nil {
 		return err
 	}
+
+	hup := make(chan os.Signal, 1)
+	signal.Notify(hup, syscall.SIGHUP)
+
+	// exists then shutdown context is cancelled (SIGINT/SIGTERM)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-hup:
+				if err := reload.Apply(*path, store, registry, mgr, log); err != nil {
+					log.Error("reloaded failed, keeping old config", "err", err)
+				}
+			}
+		}
+	}()
 
 	<-ctx.Done()
 	stop()
