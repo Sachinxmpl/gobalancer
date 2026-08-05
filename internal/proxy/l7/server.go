@@ -50,6 +50,7 @@ func New(o Options) *Server {
 		store:    o.Store,
 		balancer: o.Balancer,
 		registry: o.Registry,
+		limiter:  o.Limiter,
 		log:      o.Log,
 	}
 
