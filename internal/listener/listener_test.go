@@ -36,7 +36,7 @@ func testServer(t *testing.T) *Server {
 	registry := health.NewRegistry()
 	balancer, _ := balancer.New(cfg.Balancer, registry)
 
-	s := New(cfg.Listen, config.NewStore(cfg), balancer, registry, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	s := New(Options{Addr: cfg.Listen, Store: config.NewStore(cfg), Balancer: balancer, Registry: registry, Log: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	if err := s.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
@@ -77,8 +77,8 @@ func TestServer_AcceptsConnections(t *testing.T) {
 
 	bal, _ := balancer.New(cfg.Balancer, reg)
 
-	s := New(cfg.Listen, config.NewStore(cfg), bal, reg,
-		slog.New(slog.NewTextHandler(io.Discard, nil)))
+	s := New(Options{Addr: cfg.Listen, Store: config.NewStore(cfg), Balancer: bal, Registry: reg, Log: slog.New(slog.NewTextHandler(io.Discard, nil))})
+
 	if err := s.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
@@ -113,7 +113,7 @@ func TestServer_AcceptsConnections(t *testing.T) {
 func TestServer_StartFailOnBusyAddress(t *testing.T) {
 	s := testServer(t)
 
-	copyServerOnSameAddr := New(s.Addr().String(), config.NewStore(&config.Config{}), s.balancer, s.registry, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	copyServerOnSameAddr := New(Options{Addr: s.Addr().String(), Store: config.NewStore(&config.Config{}), Balancer: s.balancer, Registry: s.registry, Log: slog.New(slog.NewTextHandler(io.Discard, nil))})
 
 	if err := copyServerOnSameAddr.Start(); err == nil {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -230,7 +230,7 @@ func TestHandle_EvictsDeadBackend(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	srv := New(cfg.Listen, config.NewStore(cfg), bal, reg, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	srv := New(Options{Addr: cfg.Listen, Store: config.NewStore(cfg), Balancer: bal, Registry: reg, Log: slog.New(slog.NewTextHandler(io.Discard, nil))})
 
 	if err := srv.Start(); err != nil {
 		t.Fatalf("start: %v", err)

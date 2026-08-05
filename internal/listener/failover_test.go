@@ -89,9 +89,8 @@ func TestFailoverTime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	srv := New(Options{Addr: cfg.Listen, Store: config.NewStore(cfg), Balancer: bal, Registry: reg, Log: slog.New(slog.NewTextHandler(io.Discard, nil))})
 
-	srv := New(cfg.Listen, config.NewStore(cfg), bal, reg,
-		slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err := srv.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
