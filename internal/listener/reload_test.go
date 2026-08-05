@@ -44,7 +44,9 @@ func TestReload_UnderLoad(t *testing.T) {
 	defer mgr.Stop()
 
 	bal, _ := balancer.New(config.AlgRoundRobin, reg)
-	srv := New(cfg.Listen, store, bal, reg, discardLogger())
+
+	srv := New(Options{Addr: cfg.Listen, Store: store, Balancer: bal, Registry: reg, Log: discardLogger()})
+
 	if err := srv.Start(); err != nil {
 		t.Fatalf("start: %v", err)
 	}

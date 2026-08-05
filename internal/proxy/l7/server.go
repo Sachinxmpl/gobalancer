@@ -14,6 +14,7 @@ import (
 	"github.com/Sachinxmpl/gobalancer/internal/balancer"
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 	"github.com/Sachinxmpl/gobalancer/internal/health"
+	"github.com/Sachinxmpl/gobalancer/internal/ratelimit"
 )
 
 // readHeaderTimeout bounds how long a client may take to send its request headers.
@@ -26,6 +27,7 @@ type Server struct {
 	balancer balancer.Balancer
 	registry *health.Registry
 	log      *slog.Logger
+	limiter  *ratelimit.Limiter
 
 	httpSrv *http.Server
 	ln      net.Listener
@@ -33,29 +35,39 @@ type Server struct {
 	transport *http.Transport
 }
 
-func New(cfg *config.Config, store *config.Store, bal balancer.Balancer, reg *health.Registry, log *slog.Logger) *Server {
+type Options struct {
+	Config   *config.Config
+	Store    *config.Store
+	Balancer balancer.Balancer
+	Registry *health.Registry
+	Limiter  *ratelimit.Limiter
+	Log      *slog.Logger
+}
+
+func New(o Options) *Server {
 	s := &Server{
-		addr:     cfg.Listen,
-		store:    store,
-		balancer: bal,
-		registry: reg,
-		log:      log,
+		addr:     o.Config.Listen,
+		store:    o.Store,
+		balancer: o.Balancer,
+		registry: o.Registry,
+		limiter:  o.Limiter,
+		log:      o.Log,
 	}
 
 	s.httpSrv = &http.Server{
 		Handler:           s,
 		ReadHeaderTimeout: readHeaderTimeout,
-		ReadTimeout:       cfg.Timeouts.Read.Std(),
-		WriteTimeout:      cfg.Timeouts.Write.Std(),
-		IdleTimeout:       cfg.Timeouts.Idle.Std(),
-		ErrorLog:          slog.NewLogLogger(log.Handler(), slog.LevelWarn),
+		ReadTimeout:       o.Config.Timeouts.Read.Std(),
+		WriteTimeout:      o.Config.Timeouts.Write.Std(),
+		IdleTimeout:       o.Config.Timeouts.Idle.Std(),
+		ErrorLog:          slog.NewLogLogger(o.Log.Handler(), slog.LevelWarn),
 	}
 
 	s.transport = &http.Transport{
-		DialContext:           (&net.Dialer{Timeout: cfg.Timeouts.Dial.Std()}).DialContext,
+		DialContext:           (&net.Dialer{Timeout: o.Config.Timeouts.Dial.Std()}).DialContext,
 		MaxIdleConnsPerHost:   32,
 		IdleConnTimeout:       90 * time.Second,
-		ResponseHeaderTimeout: cfg.Timeouts.Read.Std(),
+		ResponseHeaderTimeout: o.Config.Timeouts.Read.Std(),
 		ForceAttemptHTTP2:     false,
 	}
 
@@ -100,6 +112,11 @@ func (s *Server) Start() error {
 // Follows 4 http proxy rules
 // Clear RequestURI, strip hop-by-hop header, append X-Forwarded-For, Stream the body
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if s.limiter != nil && !s.limiter.Allow(clientIP(r)) {
+		http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
+		return
+	}
+
 	cfg := s.store.Load()
 
 	// websocket/upgrade -> needs raw byte piping

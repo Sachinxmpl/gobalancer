@@ -14,6 +14,7 @@ import (
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 	"github.com/Sachinxmpl/gobalancer/internal/health"
 	"github.com/Sachinxmpl/gobalancer/internal/proxy"
+	"github.com/Sachinxmpl/gobalancer/internal/ratelimit"
 )
 
 const (
@@ -28,6 +29,8 @@ type Server struct {
 	registry *health.Registry
 	log      *slog.Logger
 
+	limiter *ratelimit.Limiter
+
 	ln net.Listener
 	wg sync.WaitGroup
 
@@ -38,13 +41,23 @@ type Server struct {
 	connID atomic.Uint64
 }
 
-func New(addr string, store *config.Store, bal balancer.Balancer, reg *health.Registry, log *slog.Logger) *Server {
+type Options struct {
+	Addr     string
+	Store    *config.Store
+	Balancer balancer.Balancer
+	Registry *health.Registry
+	Limiter  *ratelimit.Limiter
+	Log      *slog.Logger
+}
+
+func New(o Options) *Server {
 	return &Server{
-		addr:     addr,
-		store:    store,
-		balancer: bal,
-		registry: reg,
-		log:      log,
+		addr:     o.Addr,
+		store:    o.Store,
+		balancer: o.Balancer,
+		registry: o.Registry,
+		log:      o.Log,
+		limiter:  o.Limiter,
 		conns:    make(map[net.Conn]struct{}),
 	}
 }
@@ -140,6 +153,11 @@ func (s *Server) handle(conn net.Conn) {
 		"conn_id", s.connID.Add(1),
 		"client", conn.RemoteAddr().String(),
 	)
+
+	if s.limiter != nil && !s.limiter.Allow(clientKey(conn)) {
+		log.Debug("rate limited")
+		return
+	}
 
 	cfg := s.store.Load()
 
