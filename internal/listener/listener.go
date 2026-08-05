@@ -154,6 +154,11 @@ func (s *Server) handle(conn net.Conn) {
 		"client", conn.RemoteAddr().String(),
 	)
 
+	if s.limiter != nil && !s.limiter.Allow(clientKey(conn)) {
+		log.Debug("rate limited")
+		return
+	}
+
 	cfg := s.store.Load()
 
 	pool := balancer.HealthyBackends(cfg.L4Pool(), s.registry)

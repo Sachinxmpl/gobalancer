@@ -27,6 +27,7 @@ type Server struct {
 	balancer balancer.Balancer
 	registry *health.Registry
 	log      *slog.Logger
+	limiter  *ratelimit.Limiter
 
 	httpSrv *http.Server
 	ln      net.Listener
@@ -110,6 +111,11 @@ func (s *Server) Start() error {
 // Follows 4 http proxy rules
 // Clear RequestURI, strip hop-by-hop header, append X-Forwarded-For, Stream the body
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if s.limiter != nil && !s.limiter.Allow(clientIP(r)) {
+		http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
+		return
+	}
+
 	cfg := s.store.Load()
 
 	// websocket/upgrade -> needs raw byte piping

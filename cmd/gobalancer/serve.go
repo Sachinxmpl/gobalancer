@@ -12,6 +12,7 @@ import (
 	"github.com/Sachinxmpl/gobalancer/internal/health"
 	"github.com/Sachinxmpl/gobalancer/internal/listener"
 	"github.com/Sachinxmpl/gobalancer/internal/proxy/l7"
+	"github.com/Sachinxmpl/gobalancer/internal/ratelimit"
 	"github.com/Sachinxmpl/gobalancer/internal/reload"
 )
 
@@ -65,12 +66,17 @@ func Serve(args []string) error {
 		"backends", len(cfg.AllBackends()),
 	)
 
+	var limiter *ratelimit.Limiter
+	if cfg.RateLimit.GlobalRPS > 0 || cfg.RateLimit.PerClientRPS > 0 {
+		limiter = ratelimit.New(cfg.RateLimit.GlobalRPS, cfg.RateLimit.PerClientRPS)
+	}
+
 	var srv server
 	switch cfg.Mode {
 	case config.ModeL4:
-		srv = listener.New(listener.Options{Addr: cfg.Listen, Store: store, Balancer: balancer, Registry: registry, Log: log})
+		srv = listener.New(listener.Options{Addr: cfg.Listen, Store: store, Balancer: balancer, Registry: registry, Limiter: limiter, Log: log})
 	case config.ModeL7:
-		srv = l7.New(l7.Options{Config: cfg, Store: store, Balancer: balancer, Registry: registry, Log: log})
+		srv = l7.New(l7.Options{Config: cfg, Store: store, Balancer: balancer, Registry: registry, Limiter: limiter, Log: log})
 	}
 
 	if err := srv.Start(); err != nil {
