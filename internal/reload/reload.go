@@ -3,14 +3,17 @@ package reload
 import (
 	"log/slog"
 
+	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 	"github.com/Sachinxmpl/gobalancer/internal/health"
 )
 
 // Loads and validates the config at the path. If valid, swapt it into store and reconciles health
 func Apply(path string, store *config.Store, reg *health.Registry, mgr *health.Manager, log *slog.Logger) error {
+	logger.Debug("reload requested", "path", path)
 	newCfg, err := config.Load(path)
 	if err != nil {
+		log.Error("config reload failed", "path", path, "err", err)
 		return err
 	}
 	old := store.Load()

@@ -53,6 +53,7 @@ func (m *Manager) Sync(added, removed []string) {
 
 	for _, addr := range removed {
 		if cancel, ok := m.cancels[addr]; ok {
+			m.log.Info("stopping health prober", "backend", addr)
 			cancel()
 			delete(m.cancels, addr)
 		}
@@ -62,6 +63,7 @@ func (m *Manager) Sync(added, removed []string) {
 		if _, ok := m.cancels[addr]; ok {
 			continue
 		}
+		m.log.Info("starting health prober", "backend", addr)
 		ctx, cancel := context.WithCancel(context.Background())
 		m.cancels[addr] = cancel
 
@@ -93,6 +95,8 @@ func (m *Manager) probeLoop(ctx context.Context, addr string, st *State) {
 			st.ProbeResult(ok, m.rise)
 			if ok {
 				m.log.Debug("probe ok", "backend", addr, "phase", st.Phase())
+			} else {
+				m.log.Debug("probe failed", "backend", addr, "phase", st.Phase())
 			}
 		}
 	}
@@ -130,6 +134,7 @@ func (m *Manager) Stop() {
 	}
 	m.stopped = true
 	for addr, cancel := range m.cancels {
+		m.log.Info("stopping health prober", "backend", addr)
 		cancel()
 		delete(m.cancels, addr)
 	}

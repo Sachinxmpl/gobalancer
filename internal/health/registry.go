@@ -1,6 +1,10 @@
 package health
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
+)
 
 type Registry struct {
 	mu     sync.Mutex
@@ -37,6 +41,7 @@ func (r *Registry) Reconcile(addrs []string) (added, removed []string) {
 		if _, ok := r.states[a]; !ok {
 			r.states[a] = &State{}
 			added = append(added, a)
+			logger.Info("backend added to registry", "backend", a)
 		}
 	}
 
@@ -45,6 +50,7 @@ func (r *Registry) Reconcile(addrs []string) (added, removed []string) {
 		if _, ok := want[a]; !ok {
 			delete(r.states, a)
 			removed = append(removed, a)
+			logger.Info("backend removed from registry", "backend", a)
 		}
 	}
 	return added, removed

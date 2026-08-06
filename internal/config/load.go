@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
 	"gopkg.in/yaml.v3"
 )
 
@@ -39,15 +40,19 @@ const (
 func Load(path string) (*Config, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
+		logger.Error(fmt.Sprintf("reading config %s: %v", path, err))
 		return nil, fmt.Errorf("reading config %s: %w", path, err)
 	}
 
 	c, err := Parse(bytes.NewReader(raw))
 	if err != nil {
+		logger.Error(fmt.Sprintf("%s: %v", path, err))
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
+	logger.Debug(fmt.Sprintf("config %s: parsed successfully", path))
 
 	if err := c.loadTLS(); err != nil {
+		logger.Error(fmt.Sprintf("%s: %v", path, err))
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
 
@@ -65,8 +70,10 @@ func Parse(r io.Reader) (*Config, error) {
 
 	if err := dec.Decode(&c); err != nil {
 		if errors.Is(err, io.EOF) {
+			logger.Error("config is empty")
 			return nil, errors.New("config is empty")
 		}
+		logger.Error(fmt.Sprintf("parsing config: %v", err))
 		return nil, fmt.Errorf("parsing config: %w", err)
 	}
 
@@ -74,6 +81,7 @@ func Parse(r io.Reader) (*Config, error) {
 	c.applyDefaults()
 
 	if err := c.Validate(); err != nil {
+		logger.Error(fmt.Sprintf("validating config: %v", err))
 		return nil, err
 	}
 	return &c, nil
@@ -122,15 +130,18 @@ func setDefaultDuration(d *Duration, def_value time.Duration) {
 // Resolves the keypair if configured
 func (c *Config) loadTLS() error {
 	if c.TLS == nil {
+		logger.Debug("TLS is not configured, skipping TLS keypair loading")
 		return nil
 	}
 
 	cert, err := tls.LoadX509KeyPair(c.TLS.Cert, c.TLS.Key)
 	if err != nil {
+		logger.Error(fmt.Sprintf("tls: loading keypair (cert %q, key %q): %v", c.TLS.Cert, c.TLS.Key, err))
 		return fmt.Errorf("tls: loading keypair (cert %q, key %q): %w",
 			c.TLS.Cert, c.TLS.Key, err)
 	}
 
 	c.TLSCert = &cert
+	logger.Debug(fmt.Sprintf("tls: loaded keypair (cert %q, key %q)", c.TLS.Cert, c.TLS.Key))
 	return nil
 }

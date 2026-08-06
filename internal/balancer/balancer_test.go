@@ -3,14 +3,23 @@ package balancer
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync"
 	"testing"
 
+	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 	"go.uber.org/goleak"
 )
 
 func TestMain(m *testing.M) {
+	logger, err := logger.NewLogger("error", "text")
+	if err != nil {
+		slog.Default().Error("failed to create logger", "err", err)
+		fmt.Printf("failed to create logger: %v\n", err)
+		return
+	}
+	slog.SetDefault(logger)
 	goleak.VerifyTestMain(m)
 }
 
@@ -44,9 +53,11 @@ func TestRoundRobin_EmptyPool(t *testing.T) {
 	for _, pool := range [][]config.Backend{nil, {}} {
 		got, err := rr.Pick("", pool)
 		if !errors.Is(err, ErrNoBackends) {
+			slog.Default().Error("Pick() error", "pool", pool, "err", err)
 			t.Errorf("Pick(%v) error = %v, want ErrNoBackends", pool, err)
 		}
 		if got != nil {
+			slog.Default().Error("Pick() got non-nil backend", "pool", pool, "got", got)
 			t.Errorf("Pick(%v) = %v, want nil backend alongside the error", pool, got)
 		}
 	}
@@ -73,6 +84,7 @@ func TestRoundRobin_ConcurrentDistribution(t *testing.T) {
 			for i := 0; i < picks; i++ {
 				b, err := rr.Pick("", pool)
 				if err != nil {
+					slog.Default().Error("goroutine pick error", "goroutine", g, "pick", i, "err", err)
 					t.Errorf("goroutine %d pick %d: %v", g, i, err)
 					return
 				}
@@ -93,6 +105,7 @@ func TestRoundRobin_ConcurrentDistribution(t *testing.T) {
 	want := goroutines * picks / backends
 	for _, b := range pool {
 		if total[b.Addr] != want {
+			slog.Default().Error("backend chosen wrong number of times", "backend", b.Addr, "chosen", total[b.Addr], "want", want)
 			t.Errorf("backend %q chosen %d times, want exactly %d", b.Addr, total[b.Addr], want)
 		}
 	}
@@ -119,9 +132,11 @@ func TestWeightedRoundRobin_SmoothOrder(t *testing.T) {
 	for i, w := range want {
 		got, err := wrr.Pick("", pool)
 		if err != nil {
+			slog.Default().Error("Pick() error", "pick", i, "err", err)
 			t.Fatalf("pick %d: %v", i, err)
 		}
 		if got.Addr != w {
+			slog.Default().Error("Pick() got unexpected backend", "pick", i, "got", got.Addr, "want", w)
 			t.Errorf("pick %d = %q, want %q (full sequence must be A A B A C A A)", i, got.Addr, w)
 		}
 	}

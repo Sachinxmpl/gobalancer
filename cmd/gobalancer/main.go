@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
 )
 
 func main() {
 	if err := run(os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, "gobalancer:", err)
+		logger.Error("gobalancer", "err", err)
 		os.Exit(1)
 	}
 }
@@ -47,5 +49,5 @@ Flags:
   -log-level string     debug, info, warn or error (default "info")
   -log-format string    json or text (default "json")
 `
-	fmt.Fprint(w, sample)
+	_, _ = io.WriteString(w, sample)
 }

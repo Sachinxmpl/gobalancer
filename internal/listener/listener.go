@@ -174,6 +174,7 @@ func (s *Server) handle(conn net.Conn) {
 		return
 	}
 	log = log.With("backend", backend.Addr)
+	log.Info("l4 backend selected")
 
 	up, err := net.DialTimeout("tcp", backend.Addr, cfg.Timeouts.Dial.Std())
 	if err != nil {
@@ -187,7 +188,7 @@ func (s *Server) handle(conn net.Conn) {
 	st.AddConn()
 	defer st.RemoveConn()
 
-	log.Debug("proxying")
+	log.Debug("proxying l4 connection")
 	proxy.L4(conn, up, cfg.Timeouts.Drain.Std())
 }
 
@@ -202,6 +203,7 @@ func clientKey(conn net.Conn) string {
 // Stops accepting new connections and waits for the live ones to finish
 // if ctx epires first remaining connections are force-closed and ctx.Err() returned
 func (s *Server) ShutDown(ctx context.Context) error {
+	s.log.Info("shutting down l4 listener")
 	s.mu.Lock()
 	if s.shutdown {
 		s.mu.Unlock()

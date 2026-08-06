@@ -120,6 +120,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if s.limiter != nil && !s.limiter.Allow(clientIP(r)) {
 		s.metrics.RateLimitRejected()
+		s.log.Debug("rate limited", "client", clientIP(r))
 		http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
 		return
 	}
@@ -128,12 +129,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// websocket/upgrade -> needs raw byte piping
 	if r.Header.Get("Upgrade") != "" {
+		s.log.Debug("upgrade request rejected in l7 mode", "client", clientIP(r))
 		http.Error(w, "upgrade not supported in l7 mode, use l4", http.StatusNotImplemented)
 		return
 	}
 
 	poolName, ok := route(cfg, r.URL.Path)
 	if !ok {
+		s.log.Warn("no route for path", "path", r.URL.Path, "client", clientIP(r))
 		http.Error(w, "no route for path", http.StatusNotFound)
 		return
 	}
@@ -142,6 +145,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	backend, err := s.balancer.Pick(clientIP(r), pool)
 
 	if err != nil {
+		s.log.Warn("no healthy backends", "pool", poolName, "path", r.URL.Path, "err", err)
 		http.Error(w, "no healthy backends", http.StatusServiceUnavailable)
 		return
 	}
@@ -167,6 +171,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// roundtrip error -> could not reach backend
 		s.registry.Get(backend.Addr).ReportFailure(cfg.Health.Passive.Fall)
+		s.log.Warn("backend request failed", "backend", backend.Addr, "path", r.URL.Path, "err", err)
 		http.Error(w, "bad gateway", http.StatusBadGateway)
 
 		s.metrics.RequestObserved(
@@ -265,6 +270,7 @@ func (s *Server) Addr() net.Addr {
 // stops accepting new requests and wait for in-flight ones to finished
 // http.Server.Shudown() already implements drain
 func (s *Server) ShutDown(ctx context.Context) error {
+	s.log.Info("shutting down l7 server")
 	err := s.httpSrv.Shutdown(ctx)
 	s.transport.CloseIdleConnections()
 	return err

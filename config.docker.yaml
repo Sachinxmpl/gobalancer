@@ -1,0 +1,37 @@
+# example configuration file
+
+mode: l4                     # l4 or l7
+listen: "0.0.0.0:8080"
+
+balancer: round_robin    # round_robin | weighted_round_robin
+                              # least_connections | consistent_hash
+
+timeouts:
+  dial: 2s                   # max time to establish a backend connection
+  read: 30s                  # max time waiting for backend data
+  write: 30s                 # max time writing to a peer
+  idle: 60s                  # L7 keep-alive idle limit
+  request: 30s                # L7 end-to-end per-request budget
+  drain: 15s                  # how long shutdown waits for in-flight conns
+
+health:
+  active:
+    interval: 2s              # time between probes
+    timeout: 500ms             # must be < interval
+    rise: 2                    # consecutive good probes to readmit
+  passive:
+    fall: 3                    # consecutive real-traffic failures to evict
+    cooldown: 10s                # wait after eviction before probing
+
+rate_limit:
+  global_rps: 5000             # 0 = unlimited
+  per_client_rps: 100          # 0 = unlimited
+
+pools:
+  default:
+    - addr: "backend1:9001"
+      weight: 3
+    - addr: "backend2:9002"
+      weight: 1
+    - addr: "backend3:9003"
+      weight: 1

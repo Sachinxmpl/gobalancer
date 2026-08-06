@@ -1,0 +1,42 @@
+services:
+  backend1:
+    build:
+      context: .
+      dockerfile: Dockerfile.echo
+    environment:
+      LISTEN_ADDR: ":9001"
+      RESPONSE_DELAY: "0s"
+      RESPONSE_TEXT: "response from backend1"
+    networks: [lbnet]
+
+  backend2:
+    build:
+      context: .
+      dockerfile: Dockerfile.echo
+    environment:
+      LISTEN_ADDR: ":9002"
+      RESPONSE_DELAY: "0s"
+      RESPONSE_TEXT: "response from backend2"
+    networks: [lbnet]
+
+  backend3:
+    build:
+      context: .
+      dockerfile: Dockerfile.echo
+    environment:
+      LISTEN_ADDR: ":9003"
+      RESPONSE_DELAY: "0s"
+      RESPONSE_TEXT: "response from backend3"
+    networks: [lbnet]
+
+  gobalancer:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config.docker.yaml:/config.yaml:ro
+    depends_on: [backend1, backend2, backend3]
+    networks: [lbnet]
+
+networks:
+  lbnet:

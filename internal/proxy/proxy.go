@@ -5,6 +5,8 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
 )
 
 type closeWriter interface {
@@ -15,6 +17,7 @@ type closeWriter interface {
 // if c cannot half-close, it is fully closed
 func halfCloseWrite(c net.Conn) {
 	if cw, ok := c.(closeWriter); ok {
+		logger.Debug("half closing write side of connection", "addr", c.RemoteAddr().String())
 		cw.CloseWrite()
 		return
 	}
@@ -24,6 +27,12 @@ func halfCloseWrite(c net.Conn) {
 // Relays both ways between client and backend until both directions end, then close both socket at once
 // When one-direction ends, its EOF is forwarded to the other side as a half-close, other open direction is given drainTimeout to finish
 func L4(client, backend net.Conn, drainTimeout time.Duration) {
+	logger.Info("l4 relay started",
+		"client", client.RemoteAddr().String(),
+		"backend", backend.RemoteAddr().String(),
+		"drain_timeout", drainTimeout,
+	)
+
 	var wg sync.WaitGroup
 	wg.Add(2)
 
@@ -32,7 +41,11 @@ func L4(client, backend net.Conn, drainTimeout time.Duration) {
 	copyOneWay := func(dst, src net.Conn) {
 		defer wg.Done()
 
-		io.Copy(dst, src)
+		if _, err := io.Copy(dst, src); err != nil {
+			logger.Debug("l4 copy finished", "dst", dst.RemoteAddr().String(), "err", err)
+		} else {
+			logger.Debug("l4 copy finished", "dst", dst.RemoteAddr().String())
+		}
 
 		halfCloseWrite(dst)
 
@@ -55,5 +68,9 @@ func L4(client, backend net.Conn, drainTimeout time.Duration) {
 
 	client.Close()
 	backend.Close()
+	logger.Info("l4 relay finished",
+		"client", client.RemoteAddr().String(),
+		"backend", backend.RemoteAddr().String(),
+	)
 
 }

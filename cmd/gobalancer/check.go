@@ -2,15 +2,21 @@ package main
 
 import (
 	"flag"
-	"fmt"
 
+	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 )
 
 func Check(args []string) error {
 	fs := flag.NewFlagSet("check", flag.ContinueOnError)
 	path := fs.String("c", "config.yaml", "path to the config file")
+	logLevel := fs.String("log-level", "info", "debug, info, warn or error")
+	logFormat := fs.String("log-format", "text", "json or text")
 	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	if _, err := logger.NewLogger(*logLevel, *logFormat); err != nil {
 		return err
 	}
 
@@ -18,6 +24,6 @@ func Check(args []string) error {
 		return err
 	}
 
-	fmt.Printf("%s: ok\n", *path)
+	logger.Info("config validated", "path", *path)
 	return nil
 }

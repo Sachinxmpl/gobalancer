@@ -4,6 +4,7 @@ import (
 	"math"
 	"sync/atomic"
 
+	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 )
 
@@ -22,6 +23,7 @@ func NewLeastConnections(counter ConnCounter) *LeastConnections {
 
 func (l *LeastConnections) Pick(_ string, pool []config.Backend) (*config.Backend, error) {
 	if len(pool) == 0 {
+		logger.Error("least connections: no backends available")
 		return nil, ErrNoBackends
 	}
 
@@ -47,6 +49,7 @@ func (l *LeastConnections) Pick(_ string, pool []config.Backend) (*config.Backen
 	for i := range pool {
 		if counts[i] == min {
 			if pick == 0 {
+				logger.Debug("least connections: picked backend", "backend", pool[i].Addr, "conns", min)
 				return &pool[i], nil
 			}
 			pick--

@@ -5,52 +5,66 @@ import (
 	"fmt"
 	"net"
 	"sort"
+
+	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
 )
 
 func (c *Config) Validate() error {
 	switch c.Mode {
 	case ModeL4, ModeL7:
 	case "":
+		logger.Error(fmt.Sprintf("mode: required (%q or %q)", ModeL4, ModeL7))
 		return fmt.Errorf("mode: required (%q or %q)", ModeL4, ModeL7)
 	default:
+		logger.Error(fmt.Sprintf("mode: must be %q or %q, got %q", ModeL4, ModeL7, c.Mode))
 		return fmt.Errorf("mode: must be %q or %q, got %q", ModeL4, ModeL7, c.Mode)
 	}
 
 	if c.Listen == "" {
+		logger.Error("listen: required")
 		return errors.New("listen: required")
 	}
 
 	// empty host -> fine, ":8080" -> all interfaces 0.0.0.0
 	if err := validateHostPort(c.Listen, false); err != nil {
+		logger.Error(fmt.Sprintf("listen: %v", err))
 		return fmt.Errorf("listen: %w", err)
 	}
 
 	switch c.Balancer {
 	case AlgRoundRobin, AlgWeightedRR, AlgLeastConns, AlgConsistentHash:
 	default:
+		logger.Error(fmt.Sprintf("balancer: unknown algorithm %q", c.Balancer))
 		return fmt.Errorf("balancer: unknown algorithm %q", c.Balancer)
 	}
 
 	if err := c.Timeouts.validate(); err != nil {
+		logger.Error(fmt.Sprintf("timeouts: %v", err))
 		return err
 	}
 	if err := c.Health.validate(); err != nil {
+		logger.Error(fmt.Sprintf("health: %v", err))
 		return err
 	}
 	if err := c.RateLimit.validate(); err != nil {
+		logger.Error(fmt.Sprintf("rate_limit: %v", err))
 		return err
 	}
 	if err := c.validatePools(); err != nil {
+		logger.Error(fmt.Sprintf("pools: %v", err))
 		return err
 	}
 	if err := c.validateModeKeys(); err != nil {
+		logger.Error(fmt.Sprintf("mode keys: %v", err))
 		return err
 	}
 	if err := c.validateRoutes(); err != nil {
+		logger.Error(fmt.Sprintf("routes: %v", err))
 		return err
 	}
 	if c.TLS != nil {
 		if err := c.TLS.validate(); err != nil {
+			logger.Error(fmt.Sprintf("tls: %v", err))
 			return err
 		}
 	}
@@ -61,12 +75,15 @@ func (c *Config) Validate() error {
 func validateHostPort(addr string, requireHost bool) error {
 	host, port, err := net.SplitHostPort(addr)
 	if err != nil {
+		logger.Error(fmt.Sprintf("invalid address %q: %v", addr, err))
 		return fmt.Errorf("invalid address %q: %w", addr, err)
 	}
 	if port == "" {
+		logger.Error(fmt.Sprintf("invalid address %q: port is required", addr))
 		return fmt.Errorf("invalid address %q: port is required", addr)
 	}
 	if requireHost && host == "" {
+		logger.Error(fmt.Sprintf("invalid address %q: host is required", addr))
 		return fmt.Errorf("invalid address %q: host is required", addr)
 	}
 	return nil
@@ -86,6 +103,7 @@ func (t Timeouts) validate() error {
 	}
 	for _, f := range fields {
 		if f.d <= 0 {
+			logger.Error(fmt.Sprintf("timeouts.%s: must be greater than 0, got %v", f.name, f.d))
 			return fmt.Errorf("timeouts.%s: must be greater than 0, got %v", f.name, f.d)
 		}
 	}

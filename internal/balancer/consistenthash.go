@@ -8,6 +8,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 )
 
@@ -79,20 +80,24 @@ type ConsistentHash struct {
 }
 
 func NewConsistentHash(vnodes int) *ConsistentHash {
+	logger.Debug("consistent hash: creating consistent hash balancer")
 	return &ConsistentHash{vnodes: vnodes}
 }
 
 func (c *ConsistentHash) Pick(key string, pool []config.Backend) (*config.Backend, error) {
 	if len(pool) == 0 {
+		logger.Error("consistent hash: no backends available")
 		return nil, ErrNoBackends
 	}
 	r := c.ringFor(pool)
 	addr, ok := r.lookup(key, fnv64a)
 	if !ok {
+		logger.Error("consistent hash: failed to lookup backend")
 		return nil, ErrNoBackends
 	}
 	for i := range pool {
 		if pool[i].Addr == addr {
+			logger.Debug("consistent hash: picked backend", "key", key, "backend", addr)
 			return &pool[i], nil
 		}
 	}

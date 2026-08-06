@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -39,14 +40,16 @@ func (s *Server) Start() error {
 	go func(ln net.Listener) {
 		err := s.httpSrv.Serve(ln)
 		if err != nil && err != http.ErrServerClosed {
-			fmt.Printf("no looger for now,err metrics srver")
+			logger.Error("metrics server stopped unexpectedly", "err", err)
 		}
 	}(ln)
 
+	logger.Info("metrics server listening", "addr", ln.Addr().String())
 	return nil
 }
 
 func (s *Server) ShutDown(ctx context.Context) error {
+	logger.Info("shutting down metrics server")
 	return s.httpSrv.Shutdown(ctx)
 }
 

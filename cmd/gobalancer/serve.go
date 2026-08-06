@@ -45,6 +45,7 @@ func Serve(args []string) error {
 
 	cfg, err := config.Load(*path)
 	if err != nil {
+		log.Error("failed to load config", "path", *path, "err", err)
 		return err
 	}
 
@@ -57,11 +58,13 @@ func Serve(args []string) error {
 
 	metricsSrv := metrics.NewServer(*metricServerAddr, mtrs)
 	if err := metricsSrv.Start(); err != nil {
+		log.Error("failed to start metrics server", "addr", *metricServerAddr, "err", err)
 		return err
 	}
 
 	balancer, err := balancer.New(cfg.Balancer, registry)
 	if err != nil {
+		log.Error("failed to create balancer", "algorithm", cfg.Balancer, "err", err)
 		return err
 	}
 
@@ -95,6 +98,7 @@ func Serve(args []string) error {
 	}
 
 	if err := srv.Start(); err != nil {
+		log.Error("failed to start server", "mode", cfg.Mode, "listen", cfg.Listen, "err", err)
 		return err
 	}
 

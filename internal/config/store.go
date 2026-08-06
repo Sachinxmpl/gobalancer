@@ -1,6 +1,10 @@
 package config
 
-import "sync/atomic"
+import (
+	"sync/atomic"
+
+	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
+)
 
 type Store struct {
 	p atomic.Pointer[Config]
@@ -21,4 +25,5 @@ func (s *Store) Load() *Config {
 // makes c -> the current snapshot, subsequent loads return it
 func (s *Store) Publish(c *Config) {
 	s.p.Store(c)
+	logger.Debug("config published", "backends", len(c.BackendAddrs()), "pools", len(c.Pools))
 }

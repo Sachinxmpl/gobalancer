@@ -4,6 +4,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
 )
 
 type Phase int32
@@ -79,6 +81,7 @@ func (s *State) ReportFailure(fall int) {
 		s.phase.Store(int32(Evicted))
 		s.evictedAt = time.Now()
 		s.fails = 0
+		logger.Warn("backend evicted by passive health check", "consecutive_failures", fall)
 	}
 }
 
@@ -100,6 +103,7 @@ func (s *State) BeginProbation(cooldown time.Duration) bool {
 		if time.Since(s.evictedAt) >= cooldown {
 			s.phase.Store(int32(Cooldown))
 			s.successes = 0
+			logger.Info("backend entering cooldown after eviction", "cooldown", cooldown)
 			return true
 		}
 		return false
@@ -127,6 +131,7 @@ func (s *State) ProbeResult(ok bool, rise int) {
 	if !ok {
 		s.phase.Store(int32(Cooldown))
 		s.successes = 0
+		logger.Debug("backend probe failed, returning to cooldown")
 		return
 	}
 
@@ -135,9 +140,11 @@ func (s *State) ProbeResult(ok bool, rise int) {
 		s.phase.Store(int32(Healthy))
 		s.successes = 0
 		s.fails = 0
+		logger.Info("backend recovered to healthy", "consecutive_successes", rise)
 		return
 	}
 
 	// not enough successes
 	s.phase.Store(int32(Probation))
+	logger.Debug("backend in probation", "successes", s.successes, "rise", rise)
 }
