@@ -13,6 +13,7 @@ import (
 	"github.com/Sachinxmpl/gobalancer/internal/balancer"
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 	"github.com/Sachinxmpl/gobalancer/internal/health"
+	"github.com/Sachinxmpl/gobalancer/internal/metrics"
 	"github.com/Sachinxmpl/gobalancer/internal/proxy"
 	"github.com/Sachinxmpl/gobalancer/internal/ratelimit"
 )
@@ -30,6 +31,7 @@ type Server struct {
 	log      *slog.Logger
 
 	limiter *ratelimit.Limiter
+	metrics *metrics.Metrics
 
 	ln net.Listener
 	wg sync.WaitGroup
@@ -48,6 +50,7 @@ type Options struct {
 	Registry *health.Registry
 	Limiter  *ratelimit.Limiter
 	Log      *slog.Logger
+	Metrics  *metrics.Metrics
 }
 
 func New(o Options) *Server {
@@ -59,6 +62,7 @@ func New(o Options) *Server {
 		log:      o.Log,
 		limiter:  o.Limiter,
 		conns:    make(map[net.Conn]struct{}),
+		metrics:  o.Metrics,
 	}
 }
 
@@ -156,6 +160,7 @@ func (s *Server) handle(conn net.Conn) {
 
 	if s.limiter != nil && !s.limiter.Allow(clientKey(conn)) {
 		log.Debug("rate limited")
+		s.metrics.RateLimitRejected()
 		return
 	}
 

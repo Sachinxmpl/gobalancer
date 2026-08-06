@@ -89,7 +89,7 @@ func Serve(args []string) error {
 	var srv server
 	switch cfg.Mode {
 	case config.ModeL4:
-		srv = listener.New(listener.Options{Addr: cfg.Listen, Store: store, Balancer: balancer, Registry: registry, Limiter: limiter, Log: log})
+		srv = listener.New(listener.Options{Addr: cfg.Listen, Store: store, Balancer: balancer, Registry: registry, Limiter: limiter, Log: log, Metrics: mtrs})
 	case config.ModeL7:
 		srv = l7.New(l7.Options{Config: cfg, Store: store, Balancer: balancer, Registry: registry, Limiter: limiter, Log: log, Metrics: mtrs})
 	}
