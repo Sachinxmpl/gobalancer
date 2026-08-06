@@ -38,11 +38,14 @@ func run(args []string) error {
 
 func usage(w io.Writer) {
 	sample := `
-gobalancer - concurrent L4/L7 load balancer
+gobalancer - L4/L7 load balancer
+
+Build:
+	make build
 
 Usage:
-  gobalancer check -c <file>   validate a config file and exit
-  gobalancer run   -c <file>   serve until interrupted
+  ./bin/gobalancer check -c <file>   validate a config file and exit
+  ./bin/gobalancer run   -c <file>   serve until interrupted
 
 Flags:
   -c string             path to config file (default "config.yaml")
