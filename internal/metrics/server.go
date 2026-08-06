@@ -39,7 +39,7 @@ func (s *Server) Start() error {
 	go func(ln net.Listener) {
 		err := s.httpSrv.Serve(ln)
 		if err != nil && err != http.ErrServerClosed {
-
+			fmt.Printf("no looger for now,err metrics srver")
 		}
 	}(ln)
 
