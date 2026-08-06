@@ -11,6 +11,7 @@ import (
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 	"github.com/Sachinxmpl/gobalancer/internal/health"
 	"github.com/Sachinxmpl/gobalancer/internal/listener"
+	"github.com/Sachinxmpl/gobalancer/internal/metrics"
 	"github.com/Sachinxmpl/gobalancer/internal/proxy/l7"
 	"github.com/Sachinxmpl/gobalancer/internal/ratelimit"
 	"github.com/Sachinxmpl/gobalancer/internal/reload"
@@ -26,6 +27,13 @@ func Serve(args []string) error {
 	path := fs.String("c", "config.yaml", "path to the config file")
 	logLevel := fs.String("log-level", "info", "debug, info, warn or error")
 	logFormat := fs.String("log-format", "json", "json or text")
+
+	metricServerAddr := fs.String(
+		"metrics-addr",
+		"127.0.0.1:9095",
+		"metrics server address",
+	)
+
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -44,6 +52,13 @@ func Serve(args []string) error {
 
 	registry := health.NewRegistry()
 	added, _ := registry.Reconcile(cfg.BackendAddrs())
+
+	mtrs := metrics.New(registry)
+
+	metricsSrv := metrics.NewServer(*metricServerAddr, mtrs)
+	if err := metricsSrv.Start(); err != nil {
+		return err
+	}
 
 	balancer, err := balancer.New(cfg.Balancer, registry)
 	if err != nil {
@@ -74,9 +89,9 @@ func Serve(args []string) error {
 	var srv server
 	switch cfg.Mode {
 	case config.ModeL4:
-		srv = listener.New(listener.Options{Addr: cfg.Listen, Store: store, Balancer: balancer, Registry: registry, Limiter: limiter, Log: log})
+		srv = listener.New(listener.Options{Addr: cfg.Listen, Store: store, Balancer: balancer, Registry: registry, Limiter: limiter, Log: log, Metrics: mtrs})
 	case config.ModeL7:
-		srv = l7.New(l7.Options{Config: cfg, Store: store, Balancer: balancer, Registry: registry, Limiter: limiter, Log: log})
+		srv = l7.New(l7.Options{Config: cfg, Store: store, Balancer: balancer, Registry: registry, Limiter: limiter, Log: log, Metrics: mtrs})
 	}
 
 	if err := srv.Start(); err != nil {
@@ -93,9 +108,11 @@ func Serve(args []string) error {
 			case <-ctx.Done():
 				return
 			case <-hup:
-				if err := reload.Apply(*path, store, registry, mgr, log); err != nil {
+				err := reload.Apply(*path, store, registry, mgr, log)
+				if err != nil {
 					log.Error("reloaded failed, keeping old config", "err", err)
 				}
+				mtrs.ReloadResult(err == nil)
 			}
 		}
 	}()
@@ -111,6 +128,10 @@ func Serve(args []string) error {
 
 	if err := srv.ShutDown(shutdownCtx); err != nil {
 		log.Warn("drain did not complete cleanly", "err", err)
+	}
+
+	if err := metricsSrv.ShutDown(shutdownCtx); err != nil {
+		log.Warn("Failed to shutdown metrics server", "err", err)
 	}
 
 	log.Info("stopped")

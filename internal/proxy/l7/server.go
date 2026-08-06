@@ -14,6 +14,7 @@ import (
 	"github.com/Sachinxmpl/gobalancer/internal/balancer"
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 	"github.com/Sachinxmpl/gobalancer/internal/health"
+	"github.com/Sachinxmpl/gobalancer/internal/metrics"
 	"github.com/Sachinxmpl/gobalancer/internal/ratelimit"
 )
 
@@ -33,6 +34,7 @@ type Server struct {
 	ln      net.Listener
 
 	transport *http.Transport
+	metrics   *metrics.Metrics
 }
 
 type Options struct {
@@ -42,6 +44,7 @@ type Options struct {
 	Registry *health.Registry
 	Limiter  *ratelimit.Limiter
 	Log      *slog.Logger
+	Metrics  *metrics.Metrics
 }
 
 func New(o Options) *Server {
@@ -52,6 +55,7 @@ func New(o Options) *Server {
 		registry: o.Registry,
 		limiter:  o.Limiter,
 		log:      o.Log,
+		metrics:  o.Metrics,
 	}
 
 	s.httpSrv = &http.Server{
@@ -112,7 +116,10 @@ func (s *Server) Start() error {
 // Follows 4 http proxy rules
 // Clear RequestURI, strip hop-by-hop header, append X-Forwarded-For, Stream the body
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+
 	if s.limiter != nil && !s.limiter.Allow(clientIP(r)) {
+		s.metrics.RateLimitRejected()
 		http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
 		return
 	}
@@ -161,6 +168,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// roundtrip error -> could not reach backend
 		s.registry.Get(backend.Addr).ReportFailure(cfg.Health.Passive.Fall)
 		http.Error(w, "bad gateway", http.StatusBadGateway)
+
+		s.metrics.RequestObserved(
+			backend.Addr,
+			http.StatusBadGateway,
+			time.Since(start).Seconds(),
+		)
 		return
 	}
 
@@ -171,6 +184,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	copyHeader(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
 	io.Copy(w, resp.Body)
+
+	s.metrics.RequestObserved(
+		backend.Addr,
+		resp.StatusCode,
+		time.Since(start).Seconds(),
+	)
 }
 
 // Finds the poll for path using longest-prefix match

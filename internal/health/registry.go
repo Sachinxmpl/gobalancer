@@ -23,11 +23,6 @@ func (r *Registry) Get(addr string) *State {
 	return &State{}
 }
 
-// Returns live connecton count for addr
-func (r *Registry) Conns(addr string) int64 {
-	return r.Get(addr).Conns()
-}
-
 // Makes the registry's backend match addrs( of newly published config)
 func (r *Registry) Reconcile(addrs []string) (added, removed []string) {
 	want := make(map[string]struct{}, len(addrs))
@@ -53,4 +48,28 @@ func (r *Registry) Reconcile(addrs []string) (added, removed []string) {
 		}
 	}
 	return added, removed
+}
+
+// Returns live connecton count for addr
+func (r *Registry) Conns(addr string) int64 {
+	return r.Get(addr).Conns()
+}
+
+// Returns healthy or not
+func (r *Registry) Up(addr string) int64 {
+	if r.Get(addr).Phase() == Healthy {
+		return 1
+	}
+	return 0
+}
+
+func (r *Registry) BackendAddrs() []string {
+	addrs := make([]string, 0, len(r.states))
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for a := range r.states {
+		addrs = append(addrs, a)
+	}
+	return addrs
 }
