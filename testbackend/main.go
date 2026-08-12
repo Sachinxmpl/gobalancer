@@ -12,7 +12,7 @@ import (
 // ENV -> PORT, NAME, DELAY
 // /health returns 200 unless toggled
 
-func main(){
+func main() {
 	name := getEnv("NAME", "backend")
 	port := getEnv("PORT", "8080")
 	delay, _ := time.ParseDuration(getEnv("DELAY", "0ms"))
@@ -23,7 +23,7 @@ func main(){
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		if healthy.Load(){
+		if healthy.Load() {
 			w.WriteHeader(200)
 			return
 		}
@@ -36,15 +36,15 @@ func main(){
 	})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if delay > 0{
+		if delay > 0 {
 			time.Sleep(delay)
 		}
 		fmt.Fprintf(w, "served by %s\n", name)
 	})
 
 	demosrv := &http.Server{
-		Addr: ":" + port,
-		Handler: mux,
+		Addr:              ":" + port,
+		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
@@ -52,9 +52,9 @@ func main(){
 
 }
 
-func getEnv(k, dflt string) string{
-	if v := os.Getenv(k); v != ""{
-		return v 
+func getEnv(k, dflt string) string {
+	if v := os.Getenv(k); v != "" {
+		return v
 	}
 	return dflt
 }

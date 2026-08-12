@@ -20,7 +20,7 @@ vet:
 	go vet $(PKG)
 
 fmt:
-	gofmt -w ./cmd ./internal
+	gofmt -w ./cmd ./internal ./testbackend
  
 fmt-check:
 	@files=$$(gofmt -l ./cmd ./internal); \
