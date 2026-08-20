@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 
-	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 )
 
@@ -16,7 +15,8 @@ func Check(args []string) error {
 		return err
 	}
 
-	if _, err := logger.NewLogger(*logLevel, *logFormat); err != nil {
+	log, err := newLogger(*logLevel, *logFormat)
+	if err != nil {
 		return err
 	}
 
@@ -24,6 +24,6 @@ func Check(args []string) error {
 		return err
 	}
 
-	logger.Info("config validated", "path", *path)
+	log.Info("config validated", "path", *path)
 	return nil
 }

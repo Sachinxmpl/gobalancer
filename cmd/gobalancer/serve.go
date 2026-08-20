@@ -56,7 +56,7 @@ func Serve(args []string) error {
 
 	mtrs := metrics.New(registry)
 
-	metricsSrv := metrics.NewServer(*metricServerAddr, mtrs)
+	metricsSrv := metrics.NewServer(*metricServerAddr, mtrs, log)
 	if err := metricsSrv.Start(); err != nil {
 		log.Error("failed to start metrics server", "addr", *metricServerAddr, "err", err)
 		return err
