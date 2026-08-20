@@ -2,40 +2,72 @@ services:
   backend1:
     build:
       context: .
-      dockerfile: Dockerfile.echo
-    environment:
-      LISTEN_ADDR: ":9001"
-      RESPONSE_DELAY: "0s"
-      RESPONSE_TEXT: "response from backend1"
+      dockerfile: testbackend/Dockerfile
+    environment: { NAME: b1, PORT: "9001", DELAY: "0ms" }
     networks: [lbnet]
 
   backend2:
     build:
       context: .
-      dockerfile: Dockerfile.echo
-    environment:
-      LISTEN_ADDR: ":9002"
-      RESPONSE_DELAY: "0s"
-      RESPONSE_TEXT: "response from backend2"
+      dockerfile: testbackend/Dockerfile
+    environment: { NAME: b2, PORT: "9002", DELAY: "0ms" }
     networks: [lbnet]
 
   backend3:
     build:
       context: .
-      dockerfile: Dockerfile.echo
-    environment:
-      LISTEN_ADDR: ":9003"
-      RESPONSE_DELAY: "0s"
-      RESPONSE_TEXT: "response from backend3"
+      dockerfile: testbackend/Dockerfile
+    environment: { NAME: b3, PORT: "9003", DELAY: "20ms" }   # slower: fewer least-conns picks
     networks: [lbnet]
 
   gobalancer:
-    build: .
-    ports:
-      - "8080:8080"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      - "run"
+      - "-c"
+      - "/config.yaml"
+      - "-metrics-addr"
+      - ":9095"                # bind all interfaces so Prometheus (another container) can scrape
+      - "-log-format"
+      - "text"
     volumes:
       - ./config.docker.yaml:/config.yaml:ro
+    ports:
+      - "8080:8080"            # proxy traffic
+      - "9095:9095"            # metrics (also exposed to host for curl)
     depends_on: [backend1, backend2, backend3]
+    networks: [lbnet]
+
+  # Steady traffic so the dashboard is live the moment the stack is up.
+  load:
+    image: alpine:3.20
+    depends_on: [gobalancer]
+    command: >
+      sh -c "apk add --no-cache curl >/dev/null 2>&1;
+             while true; do curl -s -o /dev/null http://gobalancer:8080/ || true; done"
+    networks: [lbnet]
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports: ["9090:9090"]
+    depends_on: [gobalancer]
+    networks: [lbnet]
+
+  grafana:
+    image: grafana/grafana
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3000:3000"]
+    depends_on: [prometheus]
     networks: [lbnet]
 
 networks:

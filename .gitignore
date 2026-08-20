@@ -11,5 +11,4 @@ coverage.out
 
 test.go
 
-deploy/dev.key
-deploy/dev.crt
+certs
