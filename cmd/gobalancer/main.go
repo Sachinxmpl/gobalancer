@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os"
-
-	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
 )
 
 func main() {
 	if err := run(os.Args); err != nil {
-		logger.Error("gobalancer", "err", err)
+		fmt.Fprintln(os.Stderr, "gobalancer:", err)
 		os.Exit(1)
 	}
 }

@@ -3,11 +3,11 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"time"
 
-	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -15,9 +15,10 @@ import (
 type Server struct {
 	httpSrv *http.Server
 	ln      net.Listener
+	log     *slog.Logger
 }
 
-func NewServer(addr string, m *Metrics) *Server {
+func NewServer(addr string, m *Metrics, log *slog.Logger) *Server {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(m.Registry(), promhttp.HandlerOpts{}))
 
@@ -27,6 +28,7 @@ func NewServer(addr string, m *Metrics) *Server {
 			Handler:           mux,
 			ReadHeaderTimeout: 5 * time.Second,
 		},
+		log: log,
 	}
 }
 
@@ -40,16 +42,15 @@ func (s *Server) Start() error {
 	go func(ln net.Listener) {
 		err := s.httpSrv.Serve(ln)
 		if err != nil && err != http.ErrServerClosed {
-			logger.Error("metrics server stopped unexpectedly", "err", err)
+			s.log.Error("metrics server stopped unexpectedly", "err", err)
 		}
 	}(ln)
 
-	logger.Info("metrics server listening", "addr", ln.Addr().String())
+	s.log.Info("metrics server listening", "addr", ln.Addr().String())
 	return nil
 }
 
 func (s *Server) ShutDown(ctx context.Context) error {
-	logger.Info("shutting down metrics server")
 	return s.httpSrv.Shutdown(ctx)
 }
 

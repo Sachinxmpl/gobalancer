@@ -6,7 +6,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
 	"gopkg.in/yaml.v3"
 )
 
@@ -39,16 +38,13 @@ func (d Duration) String() string {
 func (d *Duration) UnmarshalYAML(node *yaml.Node) error {
 	var s string
 	if err := node.Decode(&s); err != nil {
-		logger.Error(fmt.Sprintf("duration must be string such as %q: %v", "2s", err))
 		return fmt.Errorf("duration must be string such as %q: %w", "2s", err)
 	}
 	if s == "" {
-		logger.Error("duration must be a non-empty string")
 		return fmt.Errorf("duration must be a non-empty string")
 	}
 	parsed, err := time.ParseDuration(s)
 	if err != nil {
-		logger.Error(fmt.Sprintf("invalid duration %q: %v", s, err))
 		return fmt.Errorf("invalid duration %q: %w", s, err)
 	}
 	*d = Duration(parsed)

@@ -3,7 +3,7 @@ package main
 import (
 	"log/slog"
 
-	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
+	"github.com/Sachinxmpl/gobalancer/internal/logger"
 )
 
 func newLogger(level, format string) (*slog.Logger, error) {

@@ -3,7 +3,6 @@ package balancer
 import (
 	"sync"
 
-	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 )
 
@@ -18,7 +17,6 @@ func NewWeightedRoundRobin() *WeightedRoundRobin {
 
 func (w *WeightedRoundRobin) Pick(_ string, pool []config.Backend) (*config.Backend, error) {
 	if len(pool) == 0 {
-		logger.Error("weighted round robin: no backends available")
 		return nil, ErrNoBackends
 	}
 	w.mu.Lock()
@@ -39,6 +37,5 @@ func (w *WeightedRoundRobin) Pick(_ string, pool []config.Backend) (*config.Back
 	}
 	w.current[pool[best].Addr] -= total
 
-	logger.Debug("weighted round robin: picked backend", "backend", pool[best].Addr)
 	return &pool[best], nil
 }

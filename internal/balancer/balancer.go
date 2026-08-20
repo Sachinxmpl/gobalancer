@@ -3,7 +3,7 @@ package balancer
 import (
 	"errors"
 	"fmt"
-	"github.com/Sachinxmpl/gobalancer/cmd/gobalancer/logger"
+
 	"github.com/Sachinxmpl/gobalancer/internal/config"
 	"github.com/Sachinxmpl/gobalancer/internal/health"
 )
@@ -23,23 +23,17 @@ type Balancer interface {
 func New(alg config.Algorithm, counter ConnCounter) (Balancer, error) {
 	switch alg {
 	case config.AlgRoundRobin:
-		logger.Debug("balancer: creating round robin balancer")
 		return &RoundRobin{}, nil
 	case config.AlgWeightedRR:
-		logger.Debug("balancer: creating weighted round robin balancer")
 		return NewWeightedRoundRobin(), nil
 	case config.AlgLeastConns:
 		if counter == nil {
-			logger.Error(fmt.Sprintf("balancer %q: needs a connection counter", alg))
 			return nil, fmt.Errorf("balancer %q: needs a connection counter", alg)
 		}
-		logger.Debug("balancer: creating least connections balancer")
 		return NewLeastConnections(counter), nil
 	case config.AlgConsistentHash:
-		logger.Debug("balancer: creating consistent hash balancer")
 		return NewConsistentHash(defaultVNodes), nil
 	default:
-		logger.Error(fmt.Sprintf("balancer %q: unknown", alg))
 		return nil, fmt.Errorf("balancer %q: unknown", alg)
 	}
 }
