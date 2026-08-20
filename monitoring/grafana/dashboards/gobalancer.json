@@ -1,0 +1,170 @@
+{
+  "title": "GoBalancer",
+  "uid": "gobalancer",
+  "schemaVersion": 39,
+  "timezone": "browser",
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Traffic (l7 only)",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Requests/sec by backend",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 1
+      },
+      "targets": [
+        {
+          "expr": "sum by (backend) (rate(gobalancer_requests_total[1m]))",
+          "legendFormat": "{{backend}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "p95 latency by backend (s)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, backend) (rate(gobalancer_request_duration_seconds_bucket[1m])))",
+          "legendFormat": "{{backend}}"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Backend health",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Backend up (1=up, 0=down)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "gobalancer_backend_up",
+          "legendFormat": "{{backend}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Active connections by backend",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 10
+      },
+      "targets": [
+        {
+          "expr": "gobalancer_active_connections",
+          "legendFormat": "{{backend}}"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "System",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Goroutines (live leak detector)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 19
+      },
+      "targets": [
+        {
+          "expr": "go_goroutines",
+          "legendFormat": "goroutines"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Health transitions/min",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 19
+      },
+      "targets": [
+        {
+          "expr": "sum by (to) (increase(gobalancer_health_transitions_total[1m]))",
+          "legendFormat": "{{to}}"
+        }
+      ]
+    }
+  ]
+}
