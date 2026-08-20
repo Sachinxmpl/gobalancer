@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: gobalancer
+    static_configs:
+      - targets: ["gobalancer:9095"]
