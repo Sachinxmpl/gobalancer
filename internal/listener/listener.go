@@ -178,7 +178,14 @@ func (s *Server) handle(conn net.Conn) {
 
 	up, err := net.DialTimeout("tcp", backend.Addr, cfg.Timeouts.Dial.Std())
 	if err != nil {
-		s.registry.Get(backend.Addr).ReportFailure(cfg.Health.Passive.Fall)
+		st := s.registry.Get(backend.Addr)
+		before := st.Phase()
+		st.ReportFailure(cfg.Health.Passive.Fall)
+
+		if after := st.Phase(); after != before {
+			s.metrics.HealthTransition(backend.Addr, after.String())
+		}
+
 		log.Warn("dial backend failed", "err", err)
 		return
 	}

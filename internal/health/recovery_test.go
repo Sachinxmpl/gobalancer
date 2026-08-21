@@ -47,7 +47,7 @@ func TestManager_ReadmitsRecoveredBackend(t *testing.T) {
 	added, _ := reg.Reconcile([]string{addr})
 
 	h := testHealth(20*time.Millisecond, 100*time.Millisecond, 40*time.Millisecond, 2, 3)
-	mgr := NewManager(reg, h, discardLog())
+	mgr := NewManager(reg, h, discardLog(), nil)
 	mgr.Sync(added, nil)
 	defer mgr.Stop()
 
@@ -78,7 +78,7 @@ func TestManager_DoesNotReadmitDeadBackend(t *testing.T) {
 	reg := NewRegistry()
 	added, _ := reg.Reconcile([]string{addr})
 	h := testHealth(20*time.Millisecond, 100*time.Millisecond, 40*time.Millisecond, 2, 3)
-	mgr := NewManager(reg, h, discardLog())
+	mgr := NewManager(reg, h, discardLog(), nil)
 	mgr.Sync(added, nil)
 	defer mgr.Stop()
 
@@ -99,7 +99,7 @@ func TestManager_SyncStartsAndStopsProbers(t *testing.T) {
 
 	reg := NewRegistry()
 	h := testHealth(20*time.Millisecond, 100*time.Millisecond, 40*time.Millisecond, 2, 3)
-	mgr := NewManager(reg, h, discardLog())
+	mgr := NewManager(reg, h, discardLog(), nil)
 
 	added, _ := reg.Reconcile([]string{"a:1", "b:2", "c:3"})
 	mgr.Sync(added, nil)

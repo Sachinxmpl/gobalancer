@@ -170,7 +170,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		// roundtrip error -> could not reach backend
-		s.registry.Get(backend.Addr).ReportFailure(cfg.Health.Passive.Fall)
+		before := st.Phase()
+		st.ReportFailure(cfg.Health.Passive.Fall)
+
+		if after := st.Phase(); after != before {
+			s.metrics.HealthTransition(backend.Addr, after.String())
+		}
+
 		s.log.Warn("backend request failed", "backend", backend.Addr, "path", r.URL.Path, "err", err)
 		http.Error(w, "bad gateway", http.StatusBadGateway)
 
