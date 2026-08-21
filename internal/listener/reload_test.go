@@ -39,7 +39,7 @@ func TestReload_UnderLoad(t *testing.T) {
 	store := config.NewStore(cfg)
 	reg := health.NewRegistry()
 	added, _ := reg.Reconcile(cfg.BackendAddrs())
-	mgr := health.NewManager(reg, cfg.Health, discardLogger())
+	mgr := health.NewManager(reg, cfg.Health, discardLogger(), nil)
 	mgr.Sync(added, nil)
 	defer mgr.Stop()
 

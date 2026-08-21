@@ -23,21 +23,26 @@ type Manager struct {
 	rise     int
 	cooldown time.Duration
 
+	// Is called whenever a probe moves a backend to a new phase
+	// Wired to metrics in server.go
+	onTransition func(addr, phase string)
+
 	mu      sync.Mutex
 	cancels map[string]context.CancelFunc
 	stopped bool
 	wg      sync.WaitGroup
 }
 
-func NewManager(reg *Registry, h config.Health, log *slog.Logger) *Manager {
+func NewManager(reg *Registry, h config.Health, log *slog.Logger, onTransition func(addr, phase string)) *Manager {
 	return &Manager{
-		reg:      reg,
-		log:      log,
-		interval: h.Active.Interval.Std(),
-		timeout:  h.Active.Timeout.Std(),
-		rise:     h.Active.Rise,
-		cooldown: h.Passive.Cooldown.Std(),
-		cancels:  make(map[string]context.CancelFunc),
+		reg:          reg,
+		log:          log,
+		interval:     h.Active.Interval.Std(),
+		timeout:      h.Active.Timeout.Std(),
+		rise:         h.Active.Rise,
+		cooldown:     h.Passive.Cooldown.Std(),
+		onTransition: onTransition,
+		cancels:      make(map[string]context.CancelFunc),
 	}
 }
 
@@ -88,11 +93,18 @@ func (m *Manager) probeLoop(ctx context.Context, addr string, st *State) {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			if !st.BeginProbation(m.cooldown) {
+			before := st.Phase()
+			admitted := st.BeginProbation(m.cooldown)
+			m.reportTransition(addr, before, st.Phase())
+			if !admitted {
 				continue
 			}
+
+			before = st.Phase()
 			ok := m.probeOnce(ctx, addr)
 			st.ProbeResult(ok, m.rise)
+			m.reportTransition(addr, before, st.Phase())
+
 			if ok {
 				m.log.Debug("probe ok", "backend", addr, "phase", st.Phase())
 			} else {
@@ -140,4 +152,10 @@ func (m *Manager) Stop() {
 	}
 	m.mu.Unlock()
 	m.wg.Wait()
+}
+
+func (m *Manager) reportTransition(addr string, before, after Phase) {
+	if before != after && m.onTransition != nil {
+		m.onTransition(addr, after.String())
+	}
 }

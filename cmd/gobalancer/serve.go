@@ -68,7 +68,7 @@ func Serve(args []string) error {
 		return err
 	}
 
-	mgr := health.NewManager(registry, cfg.Health, log)
+	mgr := health.NewManager(registry, cfg.Health, log, mtrs.HealthTransition)
 	mgr.Sync(added, nil)
 	defer mgr.Stop()
 
