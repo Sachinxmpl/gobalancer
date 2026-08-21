@@ -1,6 +1,6 @@
 # example configuration file
 
-mode: l4
+mode: l7
 listen: "0.0.0.0:8080"
 
 balancer: round_robin
@@ -23,13 +23,17 @@ health:
     cooldown: 10s
 
 rate_limit:
-  global_rps: 5000
-  per_client_rps: 100
+  global_rps: 0
+  per_client_rps: 0
+
+routes:
+  - match: { path_prefix: "/" }
+    pool: default
 
 pools:
   default:
     - addr: "backend1:9001"
-      weight: 3
+      weight: 1
     - addr: "backend2:9002"
       weight: 1
     - addr: "backend3:9003"

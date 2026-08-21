@@ -1,0 +1,28 @@
+# Version control
+.git
+.github
+.gitignore
+
+# Compiled binaries and build output
+bin
+*.prof
+coverage.out
+coverage.html
+
+# Secrets and dev certs (never ship these into a build layer)
+certs
+*.key
+*.crt
+
+# Monitoring stack, docs, and editor/tooling config — not needed to build the binary
+monitoring
+docs
+*.md
+.claude
+.golangci.yml
+
+# Docker files themselves
+Dockerfile
+testbackend/Dockerfile
+docker-compose.yml
+.dockerignore
