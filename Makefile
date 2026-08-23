@@ -20,10 +20,10 @@ vet:
 	go vet $(PKG)
 
 fmt:
-	gofmt -w ./cmd ./internal ./testbackend
+	gofmt -w ./cmd ./internal ./testbackend ./test
  
 fmt-check:
-	@files=$$(gofmt -l ./cmd ./internal); \
+	@files=$$(gofmt -l ./cmd ./internal ./test); \
 	if [ -n "$$files" ]; then \
 		echo "The following files need formatting:"; \
 		echo "$$files"; \
