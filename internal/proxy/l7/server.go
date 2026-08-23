@@ -20,7 +20,11 @@ import (
 
 // readHeaderTimeout bounds how long a client may take to send its request headers.
 // Prevents slowloris attacks.
-const readHeaderTimeout = 5 * time.Second
+const (
+	readHeaderTimeout            = 5 * time.Second
+	backendResponseHeaderTimeout = 300 * time.Millisecond
+	maxAttempts                  = 3 // total tries across distinct healthy backends
+)
 
 type Server struct {
 	addr     string
@@ -69,9 +73,10 @@ func New(o Options) *Server {
 
 	s.transport = &http.Transport{
 		DialContext:           (&net.Dialer{Timeout: o.Config.Timeouts.Dial.Std()}).DialContext,
-		MaxIdleConnsPerHost:   32,
-		IdleConnTimeout:       90 * time.Second,
-		ResponseHeaderTimeout: o.Config.Timeouts.Read.Std(),
+		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   8,
+		IdleConnTimeout:       15 * time.Second,
+		ResponseHeaderTimeout: backendResponseHeaderTimeout,
 		ForceAttemptHTTP2:     false,
 	}
 
@@ -141,22 +146,51 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pool := balancer.HealthyBackends(cfg.Pools[poolName], s.registry)
-	backend, err := s.balancer.Pick(clientIP(r), pool)
+	// Try up to maxAttempts distinct healthy backends.
+	// Retry happens only for a connection-level failure on an idempotent method, and only before any response byte has been written back to the client
+	tried := make(map[string]bool)
 
-	if err != nil {
-		s.log.Warn("no healthy backends", "pool", poolName, "path", r.URL.Path, "err", err)
-		http.Error(w, "no healthy backends", http.StatusServiceUnavailable)
-		return
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		// Client already hung up
+		if r.Context().Err() != nil {
+			return
+		}
+		pool := untried(balancer.HealthyBackends(cfg.Pools[poolName], s.registry), tried)
+
+		backend, err := s.balancer.Pick(clientIP(r), pool)
+		if err != nil {
+			status := http.StatusServiceUnavailable
+			if len(tried) > 0 {
+				status = http.StatusBadGateway
+			}
+			s.log.Warn("no healthy backend to try", "pool", poolName, "path", r.URL.Path, "tried", len(tried))
+			http.Error(w, http.StatusText(status), status)
+			s.metrics.RequestObserved("none", status, time.Since(start).Seconds())
+			return
+		}
+		tried[backend.Addr] = true
+
+		last := attempt == maxAttempts-1
+		if s.forwardOnce(w, r, cfg, backend, start, last) == resultDone {
+			return
+		}
 	}
+}
 
+type attemptResult int
+
+const (
+	resultDone attemptResult = iota
+	resultRetry
+)
+
+func (s *Server) forwardOnce(w http.ResponseWriter, r *http.Request, cfg *config.Config, backend *config.Backend, start time.Time, last bool) attemptResult {
 	st := s.registry.Get(backend.Addr)
 	st.AddConn()
 	defer st.RemoveConn()
 
 	ctx, cancel := context.WithTimeout(r.Context(), cfg.Timeouts.Request.Std())
 	defer cancel()
-
 	out := r.Clone(ctx)
 	out.RequestURI = ""
 	out.URL.Scheme = "http"
@@ -167,40 +201,68 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	appendXForwardedFor(out, clientIP(r))
 
 	resp, err := s.transport.RoundTrip(out)
-
 	if err != nil {
-		// roundtrip error -> could not reach backend
-		before := st.Phase()
-		st.ReportFailure(cfg.Health.Passive.Fall)
-
-		if after := st.Phase(); after != before {
-			s.metrics.HealthTransition(backend.Addr, after.String())
+		if r.Context().Err() != nil {
+			return resultDone
 		}
 
-		s.log.Warn("backend request failed", "backend", backend.Addr, "path", r.URL.Path, "err", err)
+		s.reportFailure(st, backend, cfg)
+		s.log.Warn("backend request failed", "backend", backend.Addr, "path", r.URL.Path, "final", last, "err", err)
+
+		if !last && isIdempotent(r.Method) {
+			return resultRetry
+		}
 		http.Error(w, "bad gateway", http.StatusBadGateway)
+		s.metrics.RequestObserved(backend.Addr, http.StatusBadGateway, time.Since(start).Seconds())
+		return resultDone
 
-		s.metrics.RequestObserved(
-			backend.Addr,
-			http.StatusBadGateway,
-			time.Since(start).Seconds(),
-		)
-		return
 	}
-
 	defer resp.Body.Close()
-	s.registry.Get(backend.Addr).ReportSuccess()
 
+	st.ReportSuccess()
 	stripHopByHop(resp.Header)
 	copyHeader(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
 	io.Copy(w, resp.Body)
 
-	s.metrics.RequestObserved(
-		backend.Addr,
-		resp.StatusCode,
-		time.Since(start).Seconds(),
-	)
+	s.metrics.RequestObserved(backend.Addr, resp.StatusCode, time.Since(start).Seconds())
+	return resultDone
+}
+
+func (s *Server) reportFailure(st *health.State, backend *config.Backend, cfg *config.Config) {
+	before := st.Phase()
+	st.ReportFailure(cfg.Health.Passive.Fall)
+	after := st.Phase()
+	if after == before {
+		return
+	}
+	s.metrics.HealthTransition(backend.Addr, after.String())
+	if after == health.Evicted {
+		s.transport.CloseIdleConnections()
+	}
+}
+
+func untried(pool []config.Backend, tried map[string]bool) []config.Backend {
+	if len(tried) == 0 {
+		return pool
+	}
+	out := make([]config.Backend, 0, len(pool))
+	for _, b := range pool {
+		if !tried[b.Addr] {
+			out = append(out, b)
+		}
+	}
+	return out
+}
+
+// isIdempotent reports whether a method is safe to replay on another backend.
+func isIdempotent(method string) bool {
+	switch method {
+	case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodTrace:
+		return true
+	default:
+		return false
+	}
 }
 
 // Finds the poll for path using longest-prefix match
