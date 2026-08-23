@@ -14,6 +14,7 @@ import (
 const (
 	maxBurst      = time.Second
 	goroutineSlop = 25
+	minEvictions  = 8
 )
 
 type rec struct {
@@ -51,11 +52,14 @@ func main() {
 		}
 	}
 
-	base, final := readBaselineFinal("test/chaos/summary.txt")
+	base, final, evictions := readBaselineFinal("test/chaos/summary.txt")
 
+	g0 := evictions >= minEvictions
 	g3 := worst < maxBurst
 	g1 := final-base <= goroutineSlop
 
+	fmt.Printf("chaos registered: %d backend evictions (expect ~10) -> %s\n",
+		evictions, passfail(g0))
 	fmt.Printf("fast failover: %d error bursts, worst = %v (limit %v) -> %s\n",
 		bursts, worst.Round(time.Millisecond), maxBurst, passfail(g3))
 	fmt.Printf("no leak:  goroutines %d -> %d (slop %d) -> %s\n",
@@ -71,7 +75,7 @@ func main() {
 			lats[n*50/100], lats[min(n*99/100, n-1)], lats[n-1])
 	}
 
-	if g1 && g3 {
+	if g0 && g1 && g3 {
 		fmt.Println("PASS")
 		return
 	}
@@ -134,14 +138,13 @@ func readResults(path string) []rec {
 	return out
 }
 
-func readBaselineFinal(path string) (base, final int) {
+func readBaselineFinal(path string) (base, final, evictions int) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	// "baseline=NN final=MM"
 	for tok := range strings.FieldsSeq(string(data)) {
 		if v, ok := strings.CutPrefix(tok, "baseline="); ok {
 			base, _ = strconv.Atoi(v)
@@ -149,7 +152,10 @@ func readBaselineFinal(path string) (base, final int) {
 		if v, ok := strings.CutPrefix(tok, "final="); ok {
 			final, _ = strconv.Atoi(v)
 		}
+		if v, ok := strings.CutPrefix(tok, "evictions="); ok {
+			evictions, _ = strconv.Atoi(v)
+		}
 	}
 
-	return base, final
+	return base, final, evictions
 }
