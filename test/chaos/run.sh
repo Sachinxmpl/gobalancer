@@ -2,7 +2,7 @@
 set -euo pipefail
 
 CHAOS_DIR="$(cd "$(dirname "$0")" && pwd)"
-COMPOSE="docker compose -f docker-compose.yml"   # root compose
+COMPOSE="docker-compose -f docker-compose.yml"   # root compose
 METRICS="http://localhost:9095/metrics"
 RATE=500
 DURATION=300           # 5 minutes
@@ -46,6 +46,6 @@ sleep 5   # let goroutines settle after traffic stops
 FINAL=$(goroutines)
 echo "goroutine final: $FINAL" | tee -a "$CHAOS_DIR/goroutines.log"
 
-echo "baseline=$BASELINE final=$Fxt"
+echo "baseline=$BASELINE final=$FINAL" > "$CHAOS_DIR/summary.txt"
 $COMPOSE down
 echo "chaos run complete. results.csv and goroutines.log written."

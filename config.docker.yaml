@@ -1,12 +1,10 @@
-# example configuration file
-
 mode: l7
 listen: "0.0.0.0:8080"
 
-balancer: round_robin
+balancer: least_connections
 
 timeouts:
-  dial: 2s
+  dial: 300ms
   read: 30s
   write: 30s
   idle: 60s
@@ -27,14 +25,12 @@ rate_limit:
   per_client_rps: 0
 
 routes:
-  - match: { path_prefix: "/" }
-    pool: default
+  - match:
+      path_prefix: "/"
+    pool: web
 
 pools:
-  default:
+  web:
     - addr: "backend1:9001"
-      weight: 1
     - addr: "backend2:9002"
-      weight: 1
     - addr: "backend3:9003"
-      weight: 1
