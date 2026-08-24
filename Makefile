@@ -48,6 +48,7 @@ bench:
 	bash test/bench/e2.sh
 	bash test/bench/e3.sh
 	bash test/bench/e4.sh
+	bash test/bench/e5.sh
 
 ci: fmt-check vet test
 
