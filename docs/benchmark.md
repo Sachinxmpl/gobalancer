@@ -135,6 +135,10 @@ Both served every request successfully at ~965/s.
 
 **What it proves.** With one sick backend and round-robin balancing, enabling the passive path reduces mean latency from 106 ms to 8.3 ms and p90 from 307 ms to 6.7 ms. With the passive path disabled, round-robin sends approximately one-third of requests to the sick backend; each times out after 300 ms and is retried, so a third of all requests are slow for the entire run. With the passive path enabled, the sick backend is evicted after 3 failures and traffic goes only to the healthy backends. In GoBalancer the passive path is the only mechanism that evicts a backend — the active prober only readmits — so active-only means no eviction at all. The passive+active p999 of 308 ms reflects brief flapping: the active prober's TCP-only probe succeeds against the sick backend (it accepts connections), readmitting it momentarily before the passive path evicts it again.
 
+## Profiling
+
+Where the CPU and memory actually go under load — CPU, heap, and goroutine profiles captured with pprof — is written up separately in [profiling.md](profiling.md). In short: the proxy spends its CPU on network syscalls and scheduling, holds under 4 MB of live memory, and runs the load on less than one core.
+
 ## Limitations
 
 All traffic runs on a single machine over loopback. This measures GoBalancer's own overhead — CPU and memory — not real-world network behaviour. On a real network the round-trip time between machines dwarfs the sub-millisecond cost measured here. Read these as "how much does the balancer add," not "how fast is a request in production."
