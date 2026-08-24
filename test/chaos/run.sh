@@ -20,7 +20,7 @@ BASELINE=$(goroutines)
 echo "goroutine baseline: $BASELINE" | tee "$CHAOS_DIR/goroutines.log"
 
 echo "starting constant-rate load ($RATE rps for ${DURATION}s)..."
-go run "$CHAOS_DIR/loadgen" -target http://localhost:8080/ \
+go run "$CHAOS_DIR/../loadgen" -target http://localhost:8080/ \
   -rate "$RATE" -duration "${DURATION}s" -out "$CHAOS_DIR/results.csv" &
 LOAD_PID=$!
 

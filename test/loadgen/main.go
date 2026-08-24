@@ -17,7 +17,7 @@ import (
 // Fires a request on a fixed schedule regardless of how fast responses come back,
 // so a stalled backend shows up as real latency/errors (no coordinated omission).
 //
-// CSV columns:  <issue_unix_nanos>,<latency_ms>,<class>
+// CSV columns:  <issue_unix_nanos>,<latency_us>,<class>
 // class is one of: ok, http_<code>, timeout, error
 
 func main() {
@@ -68,7 +68,7 @@ func main() {
 				class := do(client, *target)
 				lat := time.Since(issued)
 				mu.Lock()
-				fmt.Fprintf(w, "%d,%d,%s\n", issued.UnixNano(), lat.Milliseconds(), class)
+				fmt.Fprintf(w, "%d,%d,%s\n", issued.UnixNano(), lat.Microseconds(), class)
 				mu.Unlock()
 			})
 		}

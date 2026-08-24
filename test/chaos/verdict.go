@@ -121,11 +121,11 @@ func readResults(path string) []rec {
 		if err != nil {
 			continue
 		}
-		ms, _ := strconv.ParseInt(parts[1], 10, 64)
+		us, _ := strconv.ParseInt(parts[1], 10, 64)
 
 		out = append(out, rec{
 			t:     time.Unix(0, ns),
-			lat:   time.Duration(ms) * time.Millisecond,
+			lat:   time.Duration(us) * time.Microsecond,
 			class: parts[2],
 		})
 	}
