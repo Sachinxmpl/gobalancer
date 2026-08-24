@@ -118,11 +118,22 @@ Ideal for 10 backends is 1/N = 10.0%.
 
 ---
 
-## Remaining experiments
+## E5 — What does the health loop buy?
 
-To be added as they are run:
+**Question.** When a backend is sick — accepting connections but not responding in time — does the health loop keep traffic away from it?
 
-- **E5** — What does the health loop buy? (kill a backend; passive+active vs active-only)
+**Method.** Three backends: two healthy (5 ms) and one sick (60 s delay, past the proxy's 300 ms header timeout, so every request to it times out). Send 1000 requests/second for 30 seconds through GoBalancer (L7, round_robin), once with the passive path enabled (`fall = 3`) and once with it disabled (`fall = 1000000`, i.e. active-only). Round-robin is used so the health loop is the only mechanism that can route around the sick backend.
+
+**Result.**
+
+| health | p50 | p90 | p99 | p999 | mean |
+|--------|----:|----:|----:|-----:|-----:|
+| passive+active | 6.1 ms | 6.7 ms | 10.5 ms | 308 ms | 8.3 ms |
+| active-only    | 6.5 ms | 307 ms | 309 ms | 312 ms | 106 ms |
+
+Both served every request successfully at ~965/s.
+
+**What it proves.** With one sick backend and round-robin balancing, enabling the passive path reduces mean latency from 106 ms to 8.3 ms and p90 from 307 ms to 6.7 ms. With the passive path disabled, round-robin sends approximately one-third of requests to the sick backend; each times out after 300 ms and is retried, so a third of all requests are slow for the entire run. With the passive path enabled, the sick backend is evicted after 3 failures and traffic goes only to the healthy backends. In GoBalancer the passive path is the only mechanism that evicts a backend — the active prober only readmits — so active-only means no eviction at all. The passive+active p999 of 308 ms reflects brief flapping: the active prober's TCP-only probe succeeds against the sick backend (it accepts connections), readmitting it momentarily before the passive path evicts it again.
 
 ## Limitations
 
