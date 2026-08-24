@@ -1,0 +1,4 @@
+keys=100000  backends=10  (drop one at a time, averaged over all 10)
+consistent_hash moved: avg 10.0%  (min 4.3%, max 16.0%)
+modulo_n        moved: avg 90.1%
+ideal (1/N):           10.0%

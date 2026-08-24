@@ -1,0 +1,19 @@
+mode: l7
+listen: "127.0.0.1:8080"
+balancer: round_robin
+health:
+  active:
+    interval: 2s
+    timeout: 500ms
+    rise: 2
+  passive:
+    fall: 3
+    cooldown: 10s
+routes:
+  - match: { path_prefix: "/" }
+    pool: default
+pools:
+  default:
+    - addr: "127.0.0.1:9501"
+    - addr: "127.0.0.1:9502"
+    - addr: "127.0.0.1:9503"

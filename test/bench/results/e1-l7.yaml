@@ -1,0 +1,9 @@
+mode: l7
+listen: "127.0.0.1:8080"
+balancer: round_robin
+routes:
+  - match: { path_prefix: "/" }
+    pool: default
+pools:
+  default:
+    - addr: "127.0.0.1:9101"

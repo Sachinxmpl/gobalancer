@@ -1,0 +1,13 @@
+mode: l4
+listen: "127.0.0.1:8080"
+balancer: round_robin
+timeouts:
+  dial: 2s
+  read: 300s
+  write: 300s
+  idle: 300s
+  request: 300s
+  drain: 15s
+pools:
+  default:
+    - addr: "127.0.0.1:9201"

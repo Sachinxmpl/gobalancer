@@ -1,0 +1,4 @@
+target      count  ok%    thr(req/s)  p50      p99      p999     max
+direct      28911  100.0  964         5.591ms  6.464ms  7.363ms  10.163ms
+through-l7  29011  100.0  967         6.013ms  7.008ms  8.672ms  11.469ms
+through-l4  29293  100.0  976         5.777ms  6.598ms  7.75ms   10.106ms
