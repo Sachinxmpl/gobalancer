@@ -45,6 +45,7 @@ run: build
 bench:
 	bash test/bench/env.sh
 	bash test/bench/e1.sh
+	bash test/bench/e2.sh
 
 ci: fmt-check vet test
 
