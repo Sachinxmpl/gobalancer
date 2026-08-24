@@ -56,11 +56,34 @@ Overhead added by GoBalancer (latency minus the direct baseline):
 
 ---
 
+## E2 — Does goroutine-per-connection hold up?
+
+**Question.** GoBalancer gives every connection its own goroutines. Does that model still work with thousands of connections at once, or does it fall apart?
+
+**Method.** Run GoBalancer in L4 mode in front of a backend that hangs on every request, so connections stay open. Open a growing number of connections at once — 100 up to 10,000 — and at each level read two numbers straight off the balancer's `/metrics`: its live goroutine count (`go_goroutines`) and its memory use (`process_resident_memory_bytes`). L4 is used here because its byte-relay has no HTTP-level timeout, so the slow backend keeps every connection parked.
+
+**Result.**
+
+| connections | goroutines | memory |
+|------------:|-----------:|-------:|
+| 0 (idle) | 12    | 12.8 MB  |
+| 100      | 312   | 16.9 MB  |
+| 500      | 1512  | 25.3 MB  |
+| 1000     | 3012  | 32.9 MB  |
+| 2000     | 6012  | 51.1 MB  |
+| 5000     | 15012 | 107.5 MB |
+| 10000    | 30012 | 189.5 MB |
+
+Every connection was established; none failed.
+
+**What it means.** The goroutine count is exactly `12 + 3 × connections` at every level — perfectly linear. Each L4 connection uses three goroutines: one to handle it, plus one for each direction of the byte copy (client→backend and backend→client). Memory grows about 18 KB per connection, so 10,000 live connections cost under 200 MB. Nothing wobbles or plateaus — the Go runtime schedules 30,000 goroutines without trouble. The goroutine-per-connection model holds up cleanly at this scale.
+
+---
+
 ## Remaining experiments
 
 To be added as they are run:
 
-- **E2** — Does goroutine-per-connection hold up? (memory and goroutines from 100 → 10,000 connections)
 - **E3** — When does least-connections beat round-robin? (slow one backend, compare p99)
 - **E4** — Is the 1/N remap claim real? (drop 1 of 10 backends, count keys moved)
 - **E5** — What does the health loop buy? (kill a backend; passive+active vs active-only)
