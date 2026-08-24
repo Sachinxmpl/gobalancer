@@ -1,10 +1,39 @@
 # example configuration file 
 
 mode: l7
-listen: "127.0.0.1:8080"
+listen: "0.0.0.0:8080"
+
+balancer: round_robin
+
+timeouts:
+  dial: 300ms
+  read: 30s
+  write: 30s
+  idle: 60s
+  request: 30s
+  drain: 15s
+
+health:
+  active:
+    interval: 2s
+    timeout: 500ms
+    rise: 2
+  passive:
+    fall: 3
+    cooldown: 10s
+
+rate_limit:
+  global_rps: 0
+  per_client_rps: 0
+
 routes:
-  - match: { path_prefix: "/" }
-    pool: default
+  - match:
+      path_prefix: "/"
+    pool: web
+
 pools:
-  default:
+  web:
     - addr: "127.0.0.1:9001"
+      weight: 1
+    - addr: "127.0.0.1:9002"
+      weight: 1

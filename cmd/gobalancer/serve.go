@@ -9,6 +9,7 @@ import (
 
 	"github.com/Sachinxmpl/gobalancer/internal/balancer"
 	"github.com/Sachinxmpl/gobalancer/internal/config"
+	"github.com/Sachinxmpl/gobalancer/internal/debug"
 	"github.com/Sachinxmpl/gobalancer/internal/health"
 	"github.com/Sachinxmpl/gobalancer/internal/listener"
 	"github.com/Sachinxmpl/gobalancer/internal/metrics"
@@ -32,6 +33,12 @@ func Serve(args []string) error {
 		"metrics-addr",
 		"127.0.0.1:9095",
 		"metrics server address",
+	)
+
+	debugAddr := fs.String(
+		"debug-addr",
+		"",
+		"pprof debug server address, e.g. 127.0.0.1:6060 (empty = disabled)",
 	)
 
 	if err := fs.Parse(args); err != nil {
@@ -60,6 +67,15 @@ func Serve(args []string) error {
 	if err := metricsSrv.Start(); err != nil {
 		log.Error("failed to start metrics server", "addr", *metricServerAddr, "err", err)
 		return err
+	}
+
+	var debugSrv *debug.Server
+	if *debugAddr != "" {
+		debugSrv = debug.NewServer(*debugAddr, log)
+		if err := debugSrv.Start(); err != nil {
+			log.Error("failed to start debug server", "addr", *debugAddr, "err", err)
+			return err
+		}
 	}
 
 	balancer, err := balancer.New(cfg.Balancer, registry)
@@ -136,6 +152,12 @@ func Serve(args []string) error {
 
 	if err := metricsSrv.ShutDown(shutdownCtx); err != nil {
 		log.Warn("Failed to shutdown metrics server", "err", err)
+	}
+
+	if debugSrv != nil {
+		if err := debugSrv.ShutDown(shutdownCtx); err != nil {
+			log.Warn("failed to shutdown debug server", "err", err)
+		}
 	}
 
 	log.Info("stopped")
