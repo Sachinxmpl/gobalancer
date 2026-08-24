@@ -101,7 +101,7 @@ stop_balancer
 
 echo ""
 {
-  echo "target count ok% thr(req/s) p50 p99 p999 max"
+  echo "target count ok% thr(req/s) p50 p90 p99 p999 mean max"
   "$REPORT" -label direct     -in "$OUT/e1-direct.csv"
   "$REPORT" -label through-l7 -in "$OUT/e1-l7.csv"
   "$REPORT" -label through-l4 -in "$OUT/e1-l4.csv"

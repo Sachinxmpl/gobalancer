@@ -26,6 +26,7 @@ func main() {
 	var total, ok int
 	var first, last int64 = -1, -1
 	var lats []time.Duration
+	var latSum time.Duration
 
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
@@ -48,7 +49,9 @@ func main() {
 		}
 		if p[2] == "ok" {
 			ok++
-			lats = append(lats, time.Duration(us)*time.Microsecond)
+			d := time.Duration(us) * time.Microsecond
+			lats = append(lats, d)
+			latSum += d
 		}
 	}
 	if err := sc.Err(); err != nil {
@@ -65,11 +68,15 @@ func main() {
 	if total > 0 {
 		okPct = 100 * float64(ok) / float64(total)
 	}
+	var mean time.Duration
+	if ok > 0 {
+		mean = latSum / time.Duration(ok)
+	}
 	slices.Sort(lats)
 
-	fmt.Printf("%s %d %.1f %.0f %v %v %v %v\n",
+	fmt.Printf("%s %d %.1f %.0f %v %v %v %v %v %v\n",
 		*label, total, okPct, thr,
-		pct(lats, 50), pct(lats, 99), pct(lats, 99.9), last3(lats))
+		pct(lats, 50), pct(lats, 90), pct(lats, 99), pct(lats, 99.9), mean, last3(lats))
 }
 
 func pct(s []time.Duration, p float64) time.Duration {

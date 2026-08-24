@@ -1,0 +1,3 @@
+algorithm          count  ok%    thr(req/s)  p50      p90        p99        p999       mean         max
+round_robin        28673  100.0  956         6.553ms  151.479ms  153.064ms  156.398ms  54.691912ms  160.711ms
+least_connections  28726  100.0  958         6.204ms  6.908ms    151.513ms  153.126ms  10.105334ms  157.586ms
