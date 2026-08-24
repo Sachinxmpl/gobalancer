@@ -5,8 +5,8 @@ Reproducible measurements of GoBalancer — what it costs and how it behaves und
 ## How the benchmarks work
 
 - **Bare processes over loopback.** The balancer, the backends, and the load generator all run as plain processes on one machine, talking over localhost — no Docker in the path. This measures the balancer's own overhead, not network or container costs.
-- **Open-loop load.** The load generator (`test/loadgen`) sends requests at a fixed rate no matter how fast replies come back. A tool that waited for each reply would quietly slow down when the system stalls and hide the problem; sending at a constant rate makes stalls show up as real latency.
-- **Percentiles, not averages.** Each run reports p50 (median), p99, and p999 latency plus the success rate. An average hides the slow tail; percentiles show it.
+- **Open-loop load.** The load generator (`test/loadgen`) sends requests at a fixed rate no matter how fast replies come back.
+- **Percentiles.** Each run reports p50 (median), p99, and p999 latency plus the success rate. An average hides the slow tail, percentiles show it.
 - **Warm-up discarded.** The first few seconds of each run (connection setup, pool fill) are thrown away, so we measure steady state.
 
 Run everything with:
@@ -52,7 +52,7 @@ Overhead added by GoBalancer (latency minus the direct baseline):
 | L4 | +0.19 ms | +0.13 ms |
 | L7 | +0.42 ms | +0.54 ms |
 
-**What it means.** GoBalancer's cost per request is well under half a millisecond. L4 adds about 0.2 ms because it only copies bytes between two connections. L7 adds roughly twice as much (~0.4 ms) because it does real work on every request: it reads and parses the HTTP message, picks a route, rewrites headers, and manages a pool of backend connections. That gap is the price of understanding HTTP. Every request succeeded, and the slow tail stayed tight (p999 within ~2 ms of the median), so there were no hidden stalls.
+**What it proves.** On this test workload, GoBalancer adds less than 0.5 ms of p50 latency per request. L4 adds 0.19 ms at p50 and 0.13 ms at p99, while L7 adds 0.42 ms at p50 and 0.54 ms at p99. All requests succeeded, and the p999 latency remained within 3 ms of the median in both proxy modes.
 
 ---
 
@@ -76,7 +76,26 @@ Overhead added by GoBalancer (latency minus the direct baseline):
 
 Every connection was established; none failed.
 
-**What it means.** The goroutine count is exactly `12 + 3 × connections` at every level — perfectly linear. Each L4 connection uses three goroutines: one to handle it, plus one for each direction of the byte copy (client→backend and backend→client). Memory grows about 18 KB per connection, so 10,000 live connections cost under 200 MB. Nothing wobbles or plateaus — the Go runtime schedules 30,000 goroutines without trouble. The goroutine-per-connection model holds up cleanly at this scale.
+**What it proves.** Goroutine usage scales linearly with the number of active L4 connections at exactly `12 + 3 × connections`in this test. Memory usage increases by approximately 18 KB per connection, reaching 189.5 MB at 10,000 connections. All 10,000 connections were established successfully, with no connection failures.
+
+---
+
+## E3 — When does least-connections beat round-robin?
+
+**Question.** When one backend is slow, does the choice of balancing algorithm actually matter?
+
+**Method.** Three backends: two fast (5 ms) and one slow (150 ms). Send 1000 requests/second for 30 seconds through GoBalancer (L7), once with `round_robin` and once with `least_connections`, then compare the latencies. The slow backend is 150 ms (not slower) so it stays under the proxy's 300 ms response-header timeout and is not treated as failed.
+
+**Result.**
+
+| algorithm | p50 | p90 | p99 | mean |
+|-----------|----:|----:|----:|-----:|
+| round_robin       | 6.6 ms | 151 ms | 153 ms | 54.7 ms |
+| least_connections | 6.2 ms | 6.9 ms | 152 ms | 10.1 ms |
+
+Both served every request successfully at ~960/s.
+
+**What it proves.** With two 5 ms backends and one 150 ms backend, least-connections reduces p90 latency from 151 ms to 6.9 ms and mean latency from 54.7 ms to 10.1 ms compared with round-robin. The slow backend received approximately 1.6% of requests under least-connections, compared with approximately 33% under round-robin. p99 remained approximately 152 ms for both algorithms.
 
 ---
 
@@ -84,7 +103,6 @@ Every connection was established; none failed.
 
 To be added as they are run:
 
-- **E3** — When does least-connections beat round-robin? (slow one backend, compare p99)
 - **E4** — Is the 1/N remap claim real? (drop 1 of 10 backends, count keys moved)
 - **E5** — What does the health loop buy? (kill a backend; passive+active vs active-only)
 

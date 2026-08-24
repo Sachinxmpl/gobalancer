@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 # E3 - When does least-connections beat round-robin?
-# Two fast backends (5ms) and one slow one (300ms). Round-robin keeps sending its fixed
+# Two fast backends (5ms) and one slow one (150ms). Round-robin keeps sending its fixed
 # share to the slow backend; least-connections notices the pile-up and steers away.
-# Compare latency (especially p99) between the two algorithms.
+# Compare latency (p90 and mean show it most) between the two algorithms.
 
 set -euo pipefail
 
