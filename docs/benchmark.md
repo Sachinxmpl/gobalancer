@@ -99,11 +99,29 @@ Both served every request successfully at ~960/s.
 
 ---
 
+## E4 — Is the 1/N remap claim real?
+
+**Question.** When one backend is removed, how many keys does consistent hashing move, compared with naive modulo-N hashing?
+
+**Method.** Map 100,000 keys across 10 backends using GoBalancer's consistent-hash ring, then drop each backend in turn and count how many keys change backend. Repeat with naive `hash(key) % N` for comparison. Averaging over all 10 possible single-backend drops removes the luck of which backend is dropped. Pure computation — no network or processes.
+
+**Result.**
+
+| method | keys moved (avg) | per-drop range |
+|--------|-----------------:|---------------:|
+| consistent_hash | 10.0% | 4.3% – 16.0% |
+| modulo_n        | 90.1% | — |
+
+Ideal for 10 backends is 1/N = 10.0%.
+
+**What it proves.** Removing 1 of 10 backends moves an average of 10.0% of keys under consistent hashing, matching the 1/N ideal, versus 90.1% under modulo-N — roughly 9× fewer. The average of exactly 10.0% means only the dropped backend's own keys move; no other keys are disturbed. The per-drop range of 4.3% to 16.0% reflects uneven key distribution at the production vnode count: individual backends own between 4.3% and 16.0% of the key space.
+
+---
+
 ## Remaining experiments
 
 To be added as they are run:
 
-- **E4** — Is the 1/N remap claim real? (drop 1 of 10 backends, count keys moved)
 - **E5** — What does the health loop buy? (kill a backend; passive+active vs active-only)
 
 ## Limitations
