@@ -1,4 +1,4 @@
-.PHONY: all build test test-cover race vet fmt fmt-check lint tidy run check clean ci help devcert
+.PHONY: all build test test-cover race vet fmt fmt-check lint tidy run check clean ci help devcert bench
 
 BINARY := bin/gobalancer
 PKG := ./...
@@ -41,6 +41,10 @@ check: build
 
 run: build
 	./$(BINARY) run -c $(CONFIG)
+
+bench:
+	bash test/bench/env.sh
+	bash test/bench/e1.sh
 
 ci: fmt-check vet test
 
