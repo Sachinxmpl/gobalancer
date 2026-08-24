@@ -1,0 +1,45 @@
+File: gobalancer
+Build ID: 5a6a7a4d1855a0a9b02d6e6cfbb5336c091cea4a
+Type: inuse_space
+Time: 2026-08-24 18:49:28 +0545
+Showing nodes accounting for 3691.07kB, 100% of 3691.07kB total
+      flat  flat%   sum%        cum   cum%
+  902.59kB 24.45% 24.45%  2136.21kB 57.88%  compress/flate.NewWriter (inline)
+  650.62kB 17.63% 42.08%  1233.63kB 33.42%  compress/flate.(*compressor).init
+  583.01kB 15.80% 57.88%   583.01kB 15.80%  compress/flate.newDeflateFast (inline)
+  528.17kB 14.31% 72.18%   528.17kB 14.31%  net/http.init.func16
+  513.69kB 13.92% 86.10%   513.69kB 13.92%  syscall.init.func1
+     513kB 13.90%   100%      513kB 13.90%  runtime.mallocgc
+         0     0%   100%  2136.21kB 57.88%  compress/gzip.(*Writer).Write
+         0     0%   100%   513.69kB 13.92%  google.golang.org/protobuf/internal/impl.init
+         0     0%   100%   513.69kB 13.92%  google.golang.org/protobuf/internal/impl.init.func1 (inline)
+         0     0%   100%   528.17kB 14.31%  net/http.(*Request).write
+         0     0%   100%   528.17kB 14.31%  net/http.(*persistConn).writeLoop
+         0     0%   100%   528.17kB 14.31%  net/http.(*transferWriter).doBodyCopy
+         0     0%   100%   528.17kB 14.31%  net/http.(*transferWriter).writeBody
+         0     0%   100%   528.17kB 14.31%  net/http.getCopyBuf (inline)
+         0     0%   100%   513.69kB 13.92%  os.Getenv
+         0     0%   100%      513kB 13.90%  runtime.allocm
+         0     0%   100%   513.69kB 13.92%  runtime.doInit (inline)
+         0     0%   100%   513.69kB 13.92%  runtime.doInit1
+         0     0%   100%   513.69kB 13.92%  runtime.main
+         0     0%   100%      513kB 13.90%  runtime.mstart
+         0     0%   100%      513kB 13.90%  runtime.mstart0
+         0     0%   100%      513kB 13.90%  runtime.mstart1
+         0     0%   100%      513kB 13.90%  runtime.newm
+         0     0%   100%      513kB 13.90%  runtime.newobject
+         0     0%   100%      513kB 13.90%  runtime.resetspinning
+         0     0%   100%      513kB 13.90%  runtime.schedule
+         0     0%   100%      513kB 13.90%  runtime.startm
+         0     0%   100%      513kB 13.90%  runtime.wakep
+         0     0%   100%  2136.21kB 57.88%  runtime/pprof.(*profileBuilder).appendLocsForStack
+         0     0%   100%  2136.21kB 57.88%  runtime/pprof.(*profileBuilder).build
+         0     0%   100%  2136.21kB 57.88%  runtime/pprof.(*profileBuilder).emitLocation
+         0     0%   100%  2136.21kB 57.88%  runtime/pprof.(*profileBuilder).flush
+         0     0%   100%  2136.21kB 57.88%  runtime/pprof.profileWriter
+         0     0%   100%   513.69kB 13.92%  sync.(*Once).Do
+         0     0%   100%   513.69kB 13.92%  sync.(*Once).doSlow
+         0     0%   100%   528.17kB 14.31%  sync.(*Pool).Get
+         0     0%   100%   513.69kB 13.92%  syscall.Getenv
+         0     0%   100%   513.69kB 13.92%  syscall.init.OnceFunc.func3
+         0     0%   100%   513.69kB 13.92%  syscall.init.OnceFunc.func3.1

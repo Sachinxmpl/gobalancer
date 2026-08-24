@@ -1,0 +1,61 @@
+File: gobalancer
+Build ID: 5a6a7a4d1855a0a9b02d6e6cfbb5336c091cea4a
+Type: goroutine
+Time: 2026-08-24 18:49:28 +0545
+Showing nodes accounting for 67, 98.53% of 68 total
+      flat  flat%   sum%        cum   cum%
+        63 92.65% 92.65%         63 92.65%  runtime.gopark
+         1  1.47% 94.12%          1  1.47%  github.com/Sachinxmpl/gobalancer/internal/proxy/l7.stripHopByHop
+         1  1.47% 95.59%          1  1.47%  runtime.goroutineProfileWithLabels
+         1  1.47% 97.06%          1  1.47%  runtime.notetsleepg
+         1  1.47% 98.53%          1  1.47%  syscall.Syscall
+         0     0% 98.53%         44 64.71%  bufio.(*Reader).Peek
+         0     0% 98.53%         44 64.71%  bufio.(*Reader).fill
+         0     0% 98.53%          1  1.47%  github.com/Sachinxmpl/gobalancer/internal/debug.(*Server).Start.func1
+         0     0% 98.53%          2  2.94%  github.com/Sachinxmpl/gobalancer/internal/health.(*Manager).Sync.func1
+         0     0% 98.53%          2  2.94%  github.com/Sachinxmpl/gobalancer/internal/health.(*Manager).probeLoop
+         0     0% 98.53%          1  1.47%  github.com/Sachinxmpl/gobalancer/internal/metrics.(*Server).Start.func1
+         0     0% 98.53%          1  1.47%  github.com/Sachinxmpl/gobalancer/internal/proxy/l7.(*Server).ServeHTTP
+         0     0% 98.53%          1  1.47%  github.com/Sachinxmpl/gobalancer/internal/proxy/l7.(*Server).Start.func2
+         0     0% 98.53%          1  1.47%  github.com/Sachinxmpl/gobalancer/internal/proxy/l7.(*Server).forwardOnce
+         0     0% 98.53%          3  4.41%  internal/poll.(*FD).Accept
+         0     0% 98.53%         45 66.18%  internal/poll.(*FD).Read
+         0     0% 98.53%         47 69.12%  internal/poll.(*pollDesc).wait
+         0     0% 98.53%         47 69.12%  internal/poll.(*pollDesc).waitRead (inline)
+         0     0% 98.53%          1  1.47%  internal/poll.ignoringEINTRIO (inline)
+         0     0% 98.53%         47 69.12%  internal/poll.runtime_pollWait
+         0     0% 98.53%          1  1.47%  main.Serve
+         0     0% 98.53%          1  1.47%  main.Serve.func1
+         0     0% 98.53%          1  1.47%  main.main
+         0     0% 98.53%          1  1.47%  main.run
+         0     0% 98.53%          3  4.41%  net.(*TCPListener).Accept
+         0     0% 98.53%          3  4.41%  net.(*TCPListener).accept
+         0     0% 98.53%         45 66.18%  net.(*conn).Read
+         0     0% 98.53%         45 66.18%  net.(*netFD).Read
+         0     0% 98.53%          3  4.41%  net.(*netFD).accept
+         0     0% 98.53%          1  1.47%  net/http.(*ServeMux).ServeHTTP
+         0     0% 98.53%          3  4.41%  net/http.(*Server).Serve
+         0     0% 98.53%         35 51.47%  net/http.(*conn).serve
+         0     0% 98.53%         33 48.53%  net/http.(*connReader).Read
+         0     0% 98.53%          1  1.47%  net/http.(*connReader).backgroundRead
+         0     0% 98.53%         11 16.18%  net/http.(*persistConn).Read
+         0     0% 98.53%         11 16.18%  net/http.(*persistConn).readLoop
+         0     0% 98.53%         11 16.18%  net/http.(*persistConn).writeLoop
+         0     0% 98.53%          1  1.47%  net/http.HandlerFunc.ServeHTTP
+         0     0% 98.53%          2  2.94%  net/http.serverHandler.ServeHTTP
+         0     0% 98.53%          1  1.47%  net/http/pprof.Index
+         0     0% 98.53%          1  1.47%  net/http/pprof.handler.ServeHTTP
+         0     0% 98.53%          1  1.47%  os/signal.NotifyContext.func1
+         0     0% 98.53%          1  1.47%  os/signal.loop
+         0     0% 98.53%          1  1.47%  os/signal.signal_recv
+         0     0% 98.53%          1  1.47%  runtime.chanrecv
+         0     0% 98.53%          1  1.47%  runtime.chanrecv1
+         0     0% 98.53%          1  1.47%  runtime.main
+         0     0% 98.53%         47 69.12%  runtime.netpollblock
+         0     0% 98.53%          1  1.47%  runtime.pprof_goroutineProfileWithLabels
+         0     0% 98.53%         15 22.06%  runtime.selectgo
+         0     0% 98.53%          1  1.47%  runtime/pprof.(*Profile).WriteTo
+         0     0% 98.53%          1  1.47%  runtime/pprof.writeGoroutine
+         0     0% 98.53%          1  1.47%  runtime/pprof.writeRuntimeProfile
+         0     0% 98.53%          1  1.47%  syscall.Read (inline)
+         0     0% 98.53%          1  1.47%  syscall.read

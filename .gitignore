@@ -8,6 +8,7 @@ bin/
 coverage.html
 *.prof
 coverage.out
+!docs/profiles/*.prof
 
 test.go
 
