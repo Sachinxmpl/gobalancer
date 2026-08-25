@@ -1,6 +1,3 @@
-doc.md
-doc2.md
-
 # build output 
 bin/
 
@@ -13,3 +10,5 @@ coverage.out
 test.go
 
 certs
+
+doc2.md
