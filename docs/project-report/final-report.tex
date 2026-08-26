@@ -2,6 +2,7 @@
 
 \usepackage[T1]{fontenc}
 \usepackage{amsmath}
+\usepackage{graphicx}
 \usepackage[margin=1in]{geometry}
 \usepackage{parskip}
 \usepackage{xcolor}
@@ -47,30 +48,34 @@
 %======================= TITLE PAGE =======================
 \begin{titlepage}
 \centering
-\vspace*{1cm}
+\vspace*{0.6cm}
 {\Large\textbf{Tribhuvan University}}\\[0.2cm]
 {\large Institute of Engineering}\\[0.2cm]
-{\large Pulchowk Campus}\\[2.5cm]
+{\large Pulchowk Campus}\\[0.8cm]
+
+\includegraphics[width=3.2cm]{t.png}\\[0.8cm]
 
 {\large\textbf{Final Project Report}}\\[0.4cm]
 {\large On}\\[0.6cm]
 {\Huge\textbf{GoBalancer}}\\[0.3cm]
-{\large A Concurrent L4/L7 Load Balancer Written in Go}\\[2.5cm]
+{\large A Concurrent L4/L7 Load Balancer Written in Go}\\[1.8cm]
 
 \textbf{Submitted By:}\\[0.3cm]
 \begin{tabular}{ll}
 Prabesh Bastola & (PUL080BCT052)\\
 Sachin K.C.     & (PUL080BCT070)\\
 Satyam Lamsal   & (PUL080BCT078)\\
-\end{tabular}\\[2cm]
+\end{tabular}\\[1.8cm]
 
 \textbf{Submitted To:}\\[0.3cm]
 Department of Electronics and Computer Engineering\\
 Subject: Network and System Programming\\
-Instructor: Prabin Dhakal\\[2cm]
+Instructor: Prabin Dhakal\\[1.8cm]
 
 \textbf{August 2026}
 \end{titlepage}
+
+\pagenumbering{roman}
 
 %======================= DECLARATION =======================
 \chapter*{Declaration}
@@ -98,13 +103,12 @@ Balancer Written in Go} has been examined and approved as partial fulfilment of 
 requirements for the subject Network and System Programming, Department of Electronics and
 Computer Engineering, Pulchowk Campus.
 
-\vspace{2cm}
+\vspace{2.5cm}
 \noindent
-\begin{tabular}{p{7cm}p{7cm}}
-\dotfill & \dotfill\\
-Prabin Dhakal & External Examiner\\
-Instructor, Network and System Programming & \\
-\end{tabular}
+\makebox[7cm]{\dotfill}\\
+Prabin Dhakal\\
+Instructor, Network and System Programming\\
+Department of Electronics and Computer Engineering
 
 %======================= COPYRIGHT =======================
 \chapter*{Copyright}
@@ -148,7 +152,9 @@ grateful to the open-source community whose tools --- the Go programming languag
 Grafana, and Docker --- made this work possible.
 
 %======================= FRONT LISTS =======================
+\clearpage
 \tableofcontents
+\clearpage
 \listoffigures
 \listoftables
 
@@ -179,6 +185,8 @@ Grafana, and Docker --- made this work possible.
 \end{tabbing}
 
 %######################## CHAPTER 1 ########################
+\clearpage
+\pagenumbering{arabic}
 \chapter{Introduction}
 
 \section{Background}
@@ -277,7 +285,7 @@ information and therefore offer different capabilities, summarised in Table~\ref
 forwards TCP connections with minimal processing; L7 parses HTTP and can route on request
 content.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Comparison of Layer 4 and Layer 7 load balancing.}
 \label{tab:l4l7}
@@ -336,7 +344,7 @@ Several mature load balancers informed this design:
 \end{itemize}
 Table~\ref{tab:related} places GoBalancer alongside these systems.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{GoBalancer in relation to existing load balancers.}
 \label{tab:related}
@@ -382,7 +390,7 @@ move bytes --- and must never block on administrative work. The control plane is
 freely. The two planes meet at exactly one point: an immutable configuration snapshot published
 behind a single atomic pointer. Figure~\ref{fig:arch} shows the overall structure.
 
-\begin{figure}[h]
+\begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
   node distance=8mm and 10mm,
@@ -442,7 +450,7 @@ The implementation targets Go~1.26 and deliberately limits itself to four runtim
 dependencies, relying on the standard library for everything else. The stack is summarised in
 Table~\ref{tab:stack}.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Technology stack.}
 \label{tab:stack}
@@ -521,7 +529,7 @@ snapshot once and flows through these packages without acquiring a lock on the h
 \section{Development Environment}
 The system was developed and measured on the environment in Table~\ref{tab:env}.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Development and measurement environment.}
 \label{tab:env}
@@ -555,7 +563,7 @@ of goroutine leaks, which is why it is exercised directly by the chaos test.
 \subsection{L7 --- correct HTTP forwarding}
 Forwarding an HTTP request correctly means obeying four rules: clear the incoming
 \code{RequestURI} before reusing the request outbound; strip hop-by-hop headers (\code{Connection},
-\code{Keep-Alive}, \code{Transfer-Encoding}, and any names listed inside \code{Connection});
+\code{Keep-\allowbreak Alive}, \code{Transfer-\allowbreak Encoding}, and any names listed inside \code{Connection});
 append the client IP to \code{X-Forwarded-For}; and stream the body. Backend connections are
 pooled through a shared \code{http.Transport}. A key setting is \code{ResponseHeaderTimeout},
 fixed at 300~ms: it bounds how long a pooled connection to a silently-dead backend waits before
@@ -583,7 +591,7 @@ the active prober is the only mechanism that readmits (after a cooldown and \cod
 consecutive successful probes). The registry keeps this state outside the config snapshot, and a
 reload reconciles rather than rebuilds it. Table~\ref{tab:health} lists the default parameters.
 
-\begin{figure}[h]
+\begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
   node distance=28mm and 42mm,
@@ -605,7 +613,7 @@ several consecutive good probes.}
 \label{fig:health}
 \end{figure}
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Default health-check parameters (all configurable).}
 \label{tab:health}
@@ -641,7 +649,7 @@ is rejected immediately rather than queued. Metrics are exported on a separate p
 cardinality --- labelled by status class and backend, never by exact code, client IP, or path.
 Table~\ref{tab:metrics} lists the key series.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Key Prometheus metrics.}
 \label{tab:metrics}
@@ -717,7 +725,7 @@ generator, on the environment of Table~\ref{tab:env}. Each experiment is reprodu
 5~ms backend (Table~\ref{tab:e1}). The proxy adds under half a millisecond; L7 costs about twice
 L4.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{E1: per-request overhead of the proxy.}
 \label{tab:e1}
@@ -736,7 +744,7 @@ through L7 & 6.01\,ms & 7.01\,ms & +0.42\,ms\\
 (Table~\ref{tab:e2}). The goroutine count is exactly $12 + 3 \times \text{connections}$ ---
 perfectly linear --- and 10{,}000 connections cost under 200~MB with zero failures.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{E2: goroutine-per-connection scaling.}
 \label{tab:e2}
@@ -756,7 +764,7 @@ connections & goroutines & memory\\
 (Table~\ref{tab:e3}). Least-connections cuts mean latency by a factor of five by steering away
 from the slow backend.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{E3: algorithm behaviour with two 5\,ms and one 150\,ms backend.}
 \label{tab:e3}
@@ -773,7 +781,7 @@ least\_connections & 6.2\,ms & 6.9\,ms & 10.1\,ms\\
 \textbf{E4 --- Consistent-hash remap} (Table~\ref{tab:e4}). Removing one of ten backends moves
 exactly $1/N$ of keys under consistent hashing, versus 90\% for naive modulo.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{E4: fraction of keys moved when one of ten backends is removed.}
 \label{tab:e4}
@@ -791,7 +799,7 @@ modulo\_n        & 90.1\% & ---\\
 eviction keeps the mean near 8~ms; disabling it lets a third of requests suffer the sick backend,
 pushing the mean to 106~ms.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{E5: latency with and without passive eviction, one sick backend.}
 \label{tab:e5}
@@ -816,7 +824,7 @@ harness confirms that the chaos actually occurred by counting evictions from the
 
 \textbf{Goals.} Table~\ref{tab:goals} summarises the outcome against the five goals.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Results against the project goals.}
 \label{tab:goals}
