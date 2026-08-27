@@ -11,7 +11,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Sachinxmpl/gobalancer/internal/config"
+	"github.com/Sachinxmpl/loadgate/internal/config"
 )
 
 type capture struct {

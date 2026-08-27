@@ -4,7 +4,7 @@ import (
 	"math"
 	"sync/atomic"
 
-	"github.com/Sachinxmpl/gobalancer/internal/config"
+	"github.com/Sachinxmpl/loadgate/internal/config"
 )
 
 type ConnCounter interface {

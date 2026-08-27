@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Sachinxmpl/gobalancer/internal/config"
+	"github.com/Sachinxmpl/loadgate/internal/config"
 )
 
 // Manager runs one prober goroutine per backend.

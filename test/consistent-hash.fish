@@ -1,6 +1,6 @@
 #!/usr/bin/env fish
 #
-# Demonstrates consistent hashing in GoBalancer.
+# Demonstrates consistent hashing in LoadGate.
 #
 # The L7 proxy hashes the CLIENT IP (RemoteAddr) to pick a backend, so from
 # localhost every request is the same key -> same backend (that's stickiness,
@@ -14,7 +14,7 @@
 #       NAME=b1 PORT=9001 go run ./testbackend &
 #       NAME=b2 PORT=9002 go run ./testbackend &
 #       NAME=b3 PORT=9003 go run ./testbackend &
-#   - proxy running:  ./bin/gobalancer run -c configl7.example.yaml
+#   - proxy running:  ./bin/loadgate run -c configl7.example.yaml
 #
 
 set URL http://127.0.0.1:8080/

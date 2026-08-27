@@ -37,7 +37,7 @@ func TestMetrics_ExposesAndCounts(t *testing.T) {
 	resp.Body.Close()
 	text := string(body)
 
-	if !strings.Contains(text, `gobalancer_requests_total{backend="10.0.0.1:9000",status_class="2xx"} 1`) {
+	if !strings.Contains(text, `loadgate_requests_total{backend="10.0.0.1:9000",status_class="2xx"} 1`) {
 		t.Error("2xx counter missing or mislabeled")
 	}
 	if !strings.Contains(text, `status_class="5xx"} 1`) {
@@ -46,7 +46,7 @@ func TestMetrics_ExposesAndCounts(t *testing.T) {
 	if strings.Contains(text, `status_class="503"`) {
 		t.Error("rae status code leaked as label cardinality violation")
 	}
-	if !strings.Contains(text, "gobalancer_ratelimit_rejections_total 1") {
+	if !strings.Contains(text, "loadgate_ratelimit_rejections_total 1") {
 		t.Error("rejection counter missing")
 	}
 	if !strings.Contains(text, "go_goroutines") {

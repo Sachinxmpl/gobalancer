@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OUT="$ROOT/test/bench/results"
 mkdir -p "$OUT"
 
-GOBAL="$ROOT/bin/gobalancer"
+GOBAL="$ROOT/bin/loadgate"
 BACKEND="$ROOT/bin/testbackend"
 LOADGEN="$ROOT/bin/loadgen"
 REPORT="$ROOT/bin/report"
@@ -22,7 +22,7 @@ DURATION="${DURATION:-30s}"
 WARMUP="${WARMUP:-3s}"
 
 echo "building binaries..."
-go build -o "$GOBAL"   ./cmd/gobalancer
+go build -o "$GOBAL"   ./cmd/loadgate
 go build -o "$BACKEND" ./testbackend
 go build -o "$LOADGEN" ./test/loadgen
 go build -o "$REPORT"  ./test/bench/report

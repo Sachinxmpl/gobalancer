@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Sachinxmpl/gobalancer/internal/balancer"
-	"github.com/Sachinxmpl/gobalancer/internal/config"
-	"github.com/Sachinxmpl/gobalancer/internal/health"
-	"github.com/Sachinxmpl/gobalancer/internal/reload"
+	"github.com/Sachinxmpl/loadgate/internal/balancer"
+	"github.com/Sachinxmpl/loadgate/internal/config"
+	"github.com/Sachinxmpl/loadgate/internal/health"
+	"github.com/Sachinxmpl/loadgate/internal/reload"
 )
 
 func TestReload_UnderLoad(t *testing.T) {

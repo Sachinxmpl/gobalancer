@@ -3,7 +3,7 @@ package balancer
 import (
 	"sync"
 
-	"github.com/Sachinxmpl/gobalancer/internal/config"
+	"github.com/Sachinxmpl/loadgate/internal/config"
 )
 
 type WeightedRoundRobin struct {

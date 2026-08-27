@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Sachinxmpl/gobalancer/internal/config"
+	"github.com/Sachinxmpl/loadgate/internal/config"
 	"go.uber.org/goleak"
 )
 

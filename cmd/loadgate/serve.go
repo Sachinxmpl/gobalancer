@@ -7,15 +7,15 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/Sachinxmpl/gobalancer/internal/balancer"
-	"github.com/Sachinxmpl/gobalancer/internal/config"
-	"github.com/Sachinxmpl/gobalancer/internal/debug"
-	"github.com/Sachinxmpl/gobalancer/internal/health"
-	"github.com/Sachinxmpl/gobalancer/internal/listener"
-	"github.com/Sachinxmpl/gobalancer/internal/metrics"
-	"github.com/Sachinxmpl/gobalancer/internal/proxy/l7"
-	"github.com/Sachinxmpl/gobalancer/internal/ratelimit"
-	"github.com/Sachinxmpl/gobalancer/internal/reload"
+	"github.com/Sachinxmpl/loadgate/internal/balancer"
+	"github.com/Sachinxmpl/loadgate/internal/config"
+	"github.com/Sachinxmpl/loadgate/internal/debug"
+	"github.com/Sachinxmpl/loadgate/internal/health"
+	"github.com/Sachinxmpl/loadgate/internal/listener"
+	"github.com/Sachinxmpl/loadgate/internal/metrics"
+	"github.com/Sachinxmpl/loadgate/internal/proxy/l7"
+	"github.com/Sachinxmpl/loadgate/internal/ratelimit"
+	"github.com/Sachinxmpl/loadgate/internal/reload"
 )
 
 type server interface {

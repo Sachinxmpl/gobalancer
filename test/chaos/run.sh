@@ -46,7 +46,7 @@ sleep 5   # let goroutines settle after traffic stops
 FINAL=$(goroutines)
 echo "goroutine final: $FINAL" | tee -a "$CHAOS_DIR/goroutines.log"
 
-EVICTIONS=$(curl -s "$METRICS" | awk '/gobalancer_health_transitions_total\{/ && /to="evicted"/ {sum+=$NF} END{print sum+0}')
+EVICTIONS=$(curl -s "$METRICS" | awk '/loadgate_health_transitions_total\{/ && /to="evicted"/ {sum+=$NF} END{print sum+0}')
 echo "backend evictions during run: $EVICTIONS"
 
 echo "baseline=$BASELINE final=$FINAL evictions=$EVICTIONS" > "$CHAOS_DIR/summary.txt"

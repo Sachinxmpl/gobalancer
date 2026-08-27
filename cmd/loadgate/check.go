@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 
-	"github.com/Sachinxmpl/gobalancer/internal/config"
+	"github.com/Sachinxmpl/loadgate/internal/config"
 )
 
 func Check(args []string) error {

@@ -1,13 +1,13 @@
 .PHONY: all build test test-cover race vet fmt fmt-check lint tidy run check clean ci help devcert bench
 
-BINARY := bin/gobalancer
+BINARY := bin/loadgate
 PKG := ./...
 CONFIG ?= config.example.yaml
 
 all: build
 
 build:
-	go build -o $(BINARY) ./cmd/gobalancer
+	go build -o $(BINARY) ./cmd/loadgate
 
 test:
 	go test -race -count=1 $(PKG)

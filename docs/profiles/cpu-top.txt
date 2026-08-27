@@ -1,4 +1,4 @@
-File: gobalancer
+File: loadgate
 Build ID: 5a6a7a4d1855a0a9b02d6e6cfbb5336c091cea4a
 Type: cpu
 Time: 2026-08-24 18:48:58 +0545
@@ -37,7 +37,7 @@ Dropped 590 nodes (cum <= 0.13s)
      0.09s  0.35% 54.71%      0.15s  0.58%  runtime.casgstatus
      0.09s  0.35% 55.06%      0.17s  0.66%  runtime.ifaceeq
      0.09s  0.35% 55.41%      0.16s  0.62%  sync.(*Pool).Get
-     0.08s  0.31% 55.72%      4.23s 16.41%  github.com/Sachinxmpl/gobalancer/internal/proxy/l7.(*Server).forwardOnce
+     0.08s  0.31% 55.72%      4.23s 16.41%  github.com/Sachinxmpl/loadgate/internal/proxy/l7.(*Server).forwardOnce
      0.08s  0.31% 56.03%      2.37s  9.20%  net/http.(*conn).readRequest
      0.08s  0.31% 56.34%      0.24s  0.93%  runtime.(*timer).modify
      0.08s  0.31% 56.66%      1.41s  5.47%  runtime.mallocgcSmallScanNoHeader
@@ -71,7 +71,7 @@ Dropped 590 nodes (cum <= 0.13s)
      0.04s  0.16% 62.71%      0.42s  1.63%  context.WithDeadlineCause
      0.04s  0.16% 62.86%      0.13s   0.5%  context.parentCancelCtx
      0.04s  0.16% 63.02%      0.16s  0.62%  fmt.(*pp).doPrintf
-     0.04s  0.16% 63.17%      4.48s 17.38%  github.com/Sachinxmpl/gobalancer/internal/proxy/l7.(*Server).ServeHTTP
+     0.04s  0.16% 63.17%      4.48s 17.38%  github.com/Sachinxmpl/loadgate/internal/proxy/l7.(*Server).ServeHTTP
      0.04s  0.16% 63.33%      0.39s  1.51%  io.(*LimitedReader).Read
      0.04s  0.16% 63.48%      1.90s  7.37%  net.(*conn).Read
      0.04s  0.16% 63.64%      2.98s 11.56%  net/http.(*persistConn).writeLoop
@@ -80,7 +80,7 @@ Dropped 590 nodes (cum <= 0.13s)
      0.04s  0.16% 64.11%      0.38s  1.47%  runtime.markroot
      0.04s  0.16% 64.26%      0.56s  2.17%  runtime.runqsteal
      0.03s  0.12% 64.38%      4.41s 17.11%  bufio.(*Writer).Flush
-     0.03s  0.12% 64.49%      0.22s  0.85%  github.com/Sachinxmpl/gobalancer/internal/proxy/l7.copyHeader
+     0.03s  0.12% 64.49%      0.22s  0.85%  github.com/Sachinxmpl/loadgate/internal/proxy/l7.copyHeader
      0.03s  0.12% 64.61%      0.13s   0.5%  internal/poll.(*pollDesc).wait
      0.03s  0.12% 64.73%      0.23s  0.89%  internal/runtime/maps.(*Map).Delete
      0.03s  0.12% 64.84%      1.45s  5.63%  internal/runtime/syscall/linux.EpollWait
@@ -94,7 +94,7 @@ Dropped 590 nodes (cum <= 0.13s)
      0.03s  0.12% 65.77%      0.20s  0.78%  runtime.newproc1
      0.03s  0.12% 65.89%      1.61s  6.25%  runtime.stopm
      0.02s 0.078% 65.97%      0.36s  1.40%  context.(*cancelCtx).propagateCancel
-     0.02s 0.078% 66.05%      0.25s  0.97%  github.com/Sachinxmpl/gobalancer/internal/metrics.(*Metrics).RequestObserved
+     0.02s 0.078% 66.05%      0.25s  0.97%  github.com/Sachinxmpl/loadgate/internal/metrics.(*Metrics).RequestObserved
      0.02s 0.078% 66.12%      0.13s   0.5%  github.com/prometheus/client_golang/prometheus.(*MetricVec).GetMetricWithLabelValues
      0.02s 0.078% 66.20%      0.35s  1.36%  internal/runtime/maps.(*Map).growToSmall
      0.02s 0.078% 66.28%      3.93s 15.25%  net.(*netFD).Write
@@ -124,7 +124,7 @@ Dropped 590 nodes (cum <= 0.13s)
      0.01s 0.039% 68.06%      0.16s  0.62%  context.removeChild
      0.01s 0.039% 68.10%      0.25s  0.97%  context.withCancel (inline)
      0.01s 0.039% 68.14%      0.27s  1.05%  fmt.Fprintf
-     0.01s 0.039% 68.18%      0.31s  1.20%  github.com/Sachinxmpl/gobalancer/internal/proxy/l7.stripHopByHop
+     0.01s 0.039% 68.18%      0.31s  1.20%  github.com/Sachinxmpl/loadgate/internal/proxy/l7.stripHopByHop
      0.01s 0.039% 68.22%      0.13s   0.5%  github.com/prometheus/client_golang/prometheus.(*CounterVec).GetMetricWithLabelValues (inline)
      0.01s 0.039% 68.26%      0.14s  0.54%  github.com/prometheus/client_golang/prometheus.(*CounterVec).WithLabelValues
      0.01s 0.039% 68.30%      5.38s 20.88%  internal/poll.ignoringEINTRIO (inline)

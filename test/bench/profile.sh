@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Captures CPU, heap, and goroutine profiles from GoBalancer while it is under load,
+# Captures CPU, heap, and goroutine profiles from LoadGate while it is under load,
 # using the separate pprof debug port. Saves the raw profiles and their -top summaries
 # into docs/profiles/. Not part of `make bench` -- profiling is an on-demand step.
 
@@ -10,7 +10,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OUT="$ROOT/docs/profiles"
 mkdir -p "$OUT"
 
-GOBAL="$ROOT/bin/gobalancer"
+GOBAL="$ROOT/bin/loadgate"
 BACKEND="$ROOT/bin/testbackend"
 LOADGEN="$ROOT/bin/loadgen"
 
@@ -21,7 +21,7 @@ RATE="${RATE:-5000}"
 CPU_SECONDS="${CPU_SECONDS:-30}"
 
 echo "building binaries..."
-go build -o "$GOBAL"   ./cmd/gobalancer
+go build -o "$GOBAL"   ./cmd/loadgate
 go build -o "$BACKEND" ./testbackend
 go build -o "$LOADGEN" ./test/loadgen
 

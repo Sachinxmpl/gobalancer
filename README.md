@@ -1,9 +1,6 @@
-# GoBalancer
-
-**A concurrent L4/L7 load balancer written in Go — fast, correct, and measured.**
-
+# LoadGate
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)](https://go.dev)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Sachinxmpl/gobalancer)](https://goreportcard.com/report/github.com/Sachinxmpl/gobalancer)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Sachinxmpl/loadgate)](https://goreportcard.com/report/github.com/Sachinxmpl/loadgate)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
 
@@ -28,7 +25,7 @@ TCP & HTTP(S) proxying · four balancing algorithms · two-plane health checking
 
 ## About
 
-GoBalancer sits in front of a pool of backend servers and spreads client traffic across them, giving a service aggregate capacity, high availability, and a single stable address. It runs in two modes, chosen per instance:
+LoadGate sits in front of a pool of backend servers and spreads client traffic across them, giving a service aggregate capacity, high availability, and a single stable address. It runs in two modes, chosen per instance:
 
 - **L4 (TCP)** — a transparent byte-stream relay, compatible with any TCP-based protocol.
 - **L7 (HTTP/HTTPS)** — a full reverse proxy that routes by path and rewrites headers.
@@ -53,15 +50,15 @@ Under the hood, a lock-free data plane serves traffic from immutable config snap
 **Go install** (requires Go 1.26+):
 
 ```bash
-go install github.com/Sachinxmpl/gobalancer/cmd/gobalancer@latest
+go install github.com/Sachinxmpl/loadgate/cmd/loadgate@latest
 ```
 
 **From source:**
 
 ```bash
-git clone https://github.com/Sachinxmpl/gobalancer.git
-cd gobalancer
-make build          # -> bin/gobalancer
+git clone https://github.com/Sachinxmpl/loadgate.git
+cd loadgate
+make build          # -> bin/loadgate
 ```
 
 **Docker** — the repository ships a Compose stack (proxy + demo backends + Prometheus + Grafana):
@@ -90,20 +87,20 @@ pools:
 Validate it, then run:
 
 ```bash
-gobalancer check -c config.yaml    # validate and exit (non-zero on error)
-gobalancer run   -c config.yaml    # serve until interrupted
+loadgate check -c config.yaml    # validate and exit (non-zero on error)
+loadgate run   -c config.yaml    # serve until interrupted
 ```
 
 Send traffic, then reload without dropping a single connection:
 
 ```bash
 curl http://127.0.0.1:8080/
-kill -HUP $(pgrep gobalancer)       # re-reads config; keeps the old one if the new is invalid
+kill -HUP $(pgrep loadgate)       # re-reads config; keeps the old one if the new is invalid
 ```
 
 ## Configuration
 
-GoBalancer is configured by a single YAML file. Top-level fields:
+LoadGate is configured by a single YAML file. Top-level fields:
 
 | Field | Meaning |
 |-------|---------|
@@ -126,8 +123,8 @@ listen: "0.0.0.0:8080"
 balancer: least_connections
 
 tls:                           # optional; presence enables HTTPS
-  cert: /etc/gobalancer/cert.pem
-  key:  /etc/gobalancer/key.pem
+  cert: /etc/loadgate/cert.pem
+  key:  /etc/loadgate/key.pem
 
 timeouts:
   dial: 300ms
@@ -166,8 +163,8 @@ See [`config.example.yaml`](config.example.yaml) (L4) and [`configl7.example.yam
 ## Usage
 
 ```
-gobalancer check -c <file>   validate a config file and exit
-gobalancer run   -c <file>   serve until interrupted
+loadgate check -c <file>   validate a config file and exit
+loadgate run   -c <file>   serve until interrupted
 kill -HUP <pid>              hot-reload the config (validate-before-swap)
 ```
 

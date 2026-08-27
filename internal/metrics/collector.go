@@ -19,14 +19,14 @@ func NewStateCollector(src StateSource) prometheus.Collector {
 		src: src,
 
 		activeConnsDesc: prometheus.NewDesc(
-			"gobalancer_active_connections",
+			"loadgate_active_connections",
 			"Current active connections per backend",
 			[]string{"backend"},
 			nil,
 		),
 
 		upDesc: prometheus.NewDesc(
-			"gobalancer_backend_up",
+			"loadgate_backend_up",
 			"Backend health state (1=up, 0=down)",
 			[]string{"backend"},
 			nil,

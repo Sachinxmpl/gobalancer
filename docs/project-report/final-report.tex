@@ -57,7 +57,7 @@
 
 {\large\textbf{Final Project Report}}\\[0.4cm]
 {\large On}\\[0.6cm]
-{\Huge\textbf{GoBalancer}}\\[0.3cm]
+{\Huge\textbf{LoadGate}}\\[0.3cm]
 {\large A Concurrent L4/L7 Load Balancer Written in Go}\\[1.8cm]
 
 \textbf{Submitted By:}\\[0.3cm]
@@ -80,7 +80,7 @@ Instructor: Prabin Dhakal\\[1.8cm]
 %======================= DECLARATION =======================
 \chapter*{Declaration}
 \addcontentsline{toc}{chapter}{Declaration}
-We hereby declare that the work presented in this report titled \emph{GoBalancer: A
+We hereby declare that the work presented in this report titled \emph{LoadGate: A
 Concurrent L4/L7 Load Balancer Written in Go} is our own work, carried out for the subject
 Network and System Programming. All sources of information and prior work used in this
 project have been duly acknowledged. The design, implementation, testing, and results
@@ -98,7 +98,7 @@ Satyam Lamsal (PUL080BCT078)   & \hspace{3cm}\dotfill\\
 %======================= APPROVAL =======================
 \chapter*{Approval}
 \addcontentsline{toc}{chapter}{Approval}
-This is to certify that the project titled \emph{GoBalancer: A Concurrent L4/L7 Load
+This is to certify that the project titled \emph{LoadGate: A Concurrent L4/L7 Load
 Balancer Written in Go} has been examined and approved as partial fulfilment of the
 requirements for the subject Network and System Programming, Department of Electronics and
 Computer Engineering, Pulchowk Campus.
@@ -116,13 +116,13 @@ Department of Electronics and Computer Engineering
 The authors grant the Department of Electronics and Computer Engineering, Pulchowk Campus,
 permission to make this report freely available for inspection. The authors reserve other
 publication rights, and neither the report nor extensive extracts from it may be reproduced
-without the authors' written permission. The source code of GoBalancer is released as open
-source and is available at \url{https://github.com/Sachinxmpl/gobalancer}.
+without the authors' written permission. The source code of LoadGate is released as open
+source and is available at \url{https://github.com/Sachinxmpl/loadgate}.
 
 %======================= ABSTRACT =======================
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
-GoBalancer is a load balancer implemented in Go that distributes client traffic across a
+LoadGate is a load balancer implemented in Go that distributes client traffic across a
 pool of backend servers. It operates in two modes: Layer~4 (TCP), a transparent byte-stream
 proxy compatible with any TCP-based protocol, and Layer~7 (HTTP/HTTPS), a reverse proxy
 capable of path- and header-aware routing. The system provides a unified load-balancing
@@ -202,7 +202,7 @@ Load balancers can operate at different layers of the network stack. A \emph{Lay
 works at the transport layer and forwards raw TCP connections without inspecting the data
 inside them; it is fast and protocol-agnostic. A \emph{Layer~7} balancer works at the
 application layer, understands HTTP, and can therefore make richer routing decisions based on
-the request path, headers, or cookies, at the cost of parsing every request. GoBalancer
+the request path, headers, or cookies, at the cost of parsing every request. LoadGate
 implements both, so that the trade-off between the two can be studied directly.
 
 Building such a system exercises the core of network and systems programming: socket
@@ -342,15 +342,15 @@ Several mature load balancers informed this design:
   \item \textbf{Traefik} --- a Go-based reverse proxy and load balancer, demonstrating that the
   goroutine-per-connection model scales in practice.
 \end{itemize}
-Table~\ref{tab:related} places GoBalancer alongside these systems.
+Table~\ref{tab:related} places LoadGate alongside these systems.
 
 \begin{table}[htbp]
 \centering
-\caption{GoBalancer in relation to existing load balancers.}
+\caption{LoadGate in relation to existing load balancers.}
 \label{tab:related}
 \begin{tabular}{p{3.5cm}cccc}
 \toprule
-\textbf{Feature} & \textbf{NGINX} & \textbf{HAProxy} & \textbf{Envoy} & \textbf{GoBalancer}\\
+\textbf{Feature} & \textbf{NGINX} & \textbf{HAProxy} & \textbf{Envoy} & \textbf{LoadGate}\\
 \midrule
 L4 and L7 modes        & partial & yes & yes & yes\\
 Consistent hashing     & yes & yes & yes & yes\\
@@ -364,7 +364,7 @@ Scope                  & large & large & large & focused / educational\\
 
 \section{Gap Analysis}
 The existing systems are large, mature, and written mostly in C or C++. They are excellent
-tools but poor \emph{teaching artefacts}: their scale hides the core mechanisms. GoBalancer
+tools but poor \emph{teaching artefacts}: their scale hides the core mechanisms. LoadGate
 fills a narrower gap --- a compact, readable, fully-tested load balancer written against the
 Go standard library, where each mechanism (the lock-free data path, the health state machine,
 the consistent-hash ring, the failover retry) is small enough to be understood, yet complete
@@ -425,7 +425,7 @@ behind a single atomic pointer. Figure~\ref{fig:arch} shows the overall structur
 \node[below=5mm of cfg, font=\small\itshape] (hup) {SIGHUP};
 \draw[dashed,->] (hup) -- (cfg);
 \end{tikzpicture}
-\caption{High-level architecture of GoBalancer. Solid arrows are the client-request path;
+\caption{High-level architecture of LoadGate. Solid arrows are the client-request path;
 dashed arrows are configuration updates and monitoring.}
 \label{fig:arch}
 \end{figure}
@@ -567,7 +567,7 @@ Forwarding an HTTP request correctly means obeying four rules: clear the incomin
 append the client IP to \code{X-Forwarded-For}; and stream the body. Backend connections are
 pooled through a shared \code{http.Transport}. A key setting is \code{ResponseHeaderTimeout},
 fixed at 300~ms: it bounds how long a pooled connection to a silently-dead backend waits before
-failing. Rather than use the standard library's \code{httputil.ReverseProxy}, GoBalancer
+failing. Rather than use the standard library's \code{httputil.ReverseProxy}, LoadGate
 implements the proxy directly for control over these rules, and validates the result against the
 library proxy (Section~\ref{sec:testing-impl}).
 
@@ -669,7 +669,7 @@ reload outcomes & counter & successful and failed reloads\\
 \end{table}
 
 \section{Interface and Visualization}
-GoBalancer is operated through a command-line interface (\code{run} and \code{check}
+LoadGate is operated through a command-line interface (\code{run} and \code{check}
 sub-commands) and a YAML configuration file (Appendix~A and~B). Live state is visualised through
 a Grafana dashboard, provisioned automatically in the Docker stack, showing request rate and
 latency, per-backend health and active connections, goroutine and memory usage, and rate-limit
@@ -678,7 +678,7 @@ and readmitted --- satisfying goal G4. Profiling data is available on demand thr
 endpoints on a private debug port.
 
 \section{Deployment and Execution}
-The system is built with \code{make build} and run as \code{gobalancer run -c config.yaml}. The
+The system is built with \code{make build} and run as \code{loadgate run -c config.yaml}. The
 full demonstration stack is started with \code{docker compose up --build}, exposing the proxy on
 port 8080, metrics on 9095, and Grafana on 3000. Benchmarks run as bare processes via
 \code{make bench}; the chaos harness runs via \code{bash test/chaos/run.sh}. All commands are
@@ -870,7 +870,7 @@ precisely under failure, which is when a load balancer earns its keep.
 \chapter{Conclusions and Recommendations}
 
 \section{Conclusions}
-This project designed, implemented, and evaluated GoBalancer, a concurrent L4/L7 load balancer
+This project designed, implemented, and evaluated LoadGate, a concurrent L4/L7 load balancer
 written in Go against the standard library with only four runtime dependencies. All five
 measurable goals were met: no goroutine leaks under sustained fault injection, no dropped
 in-flight requests during reload and shutdown, sub-second failover, live observability, and a
@@ -957,8 +957,8 @@ pools:
 
 \chapter{Command-Line Reference}
 \begin{lstlisting}
-gobalancer check -c <file>    validate a config file and exit
-gobalancer run   -c <file>    serve until interrupted
+loadgate check -c <file>    validate a config file and exit
+loadgate run   -c <file>    serve until interrupted
 
 run flags:
   -c            config path (default config.yaml)

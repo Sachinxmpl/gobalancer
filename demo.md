@@ -1,24 +1,24 @@
-# GoBalancer — Demo
+# LoadGate — Demo
 
-> "GoBalancer is a concurrent L4/L7 reverse proxy and load balancer written in Go.
+> "LoadGate is a concurrent L4/L7 reverse proxy and load balancer written in Go.
 > It has a lock-free data plane, four balancing algorithms, active + passive health
 > checking with a real state machine, live config reload with zero dropped
 > connections, Prometheus metrics, and it survives backends being killed under load.
-
 
 ---
 
 ## 2
 
+```bash
+./bin/loadgate help
+```
 
 ```bash
-./bin/gobalancer help
-```
-```bash
-./bin/gobalancer check -c configl7.example.yaml     # prints OK
+./bin/loadgate check -c configl7.example.yaml     # prints OK
 ```
 
 Open `configl7.example.yaml` on screen and narrate the important blocks:
+
 - `mode: l7` + `balancer: round_robin`
 - `health.active` (readmit rules) vs `health.passive` (eviction rules)
 - `routes` → `pools` mapping
@@ -27,21 +27,23 @@ Open `configl7.example.yaml` on screen and narrate the important blocks:
 
 ---
 
-## 3.balances load 
 
+
+## 3.balances load
 
 ```bash
 NAME=b1 PORT=9001 go run ./testbackend &
 NAME=b2 PORT=9002 go run ./testbackend &
 NAME=b3 PORT=9003 go run ./testbackend &
 ```
+
 > Each backend also exposes `/health` (used by the active prober) and `/toggle`
 > (flips itself healthy↔unhealthy without dying).
 
-**GoBalancer in L7 round-robin:**
+**LoadGate in L7 round-robin:**
 
 ```bash
-./bin/gobalancer run -c configl7.example.yaml -log-format text
+./bin/loadgate run -c configl7.example.yaml -log-format text
 ```
 
 **Send traffic**
@@ -64,7 +66,10 @@ restart, and repeat. Or use `config.docker.yaml` which already uses
 
 ---
 
+
+
 ## Health checking + failover
+
 **kill the backend process.**
 
 **Step 1 — kill b2:**
@@ -83,7 +88,6 @@ for i in (seq 1 12); curl -s http://127.0.0.1:8080/; echo; end
 > passive path **evicts** it — b2 drops out of the rotation and traffic flows to the
 > survivors. That's fail-fast: real traffic is the signal."
 
-
 **Step 3 — bring it back:**
 
 ```fish
@@ -100,9 +104,12 @@ is careful (don't flap a backend back in on one lucky response).
 
 ---
 
+
+
 ## 5. Live config reload — zero downtime
 
 Keep traffic running in a loop:
+
 ```bash
 while true
     curl -s -o /dev/null -w "%{http_code} " http://127.0.0.1:8080/
@@ -115,7 +122,7 @@ then send SIGHUP:
 
 ```bash
 # terminal 2 or 3
-kill -HUP $(pgrep -f 'bin/gobalancer run')
+kill -HUP $(pgrep -f 'bin/loadgate run')
 ```
 
 > "SIGHUP re-reads the file, validates it, and atomically swaps the config snapshot.
@@ -127,19 +134,22 @@ live; a few are captured at startup. It's documented.)
 
 ---
 
+
+
 ## 6. Observability — Prometheus metrics (1 minute)
 
 Metrics are always on (default `127.0.0.1:9095`).
 
 ```bash
 # terminal 3
-curl -s http://127.0.0.1:9095/metrics | grep gobalancer_
+2
 ```
 
 Highlight these lines on screen:
-- `gobalancer_backend_up{backend="..."}` — 1 = healthy, 0 = evicted
-- `gobalancer_active_connections{backend="..."}` — live per-backend load
-- `gobalancer_health_transitions_total{...to="evicted"}` — proof the failover happened
+
+- `loadgate_backend_up{backend="..."}` — 1 = healthy, 0 = evicted
+- `loadgate_active_connections{backend="..."}` — live per-backend load
+- `loadgate_health_transitions_total{...to="evicted"}` — proof the failover happened
 - request counters / latency histograms
 
 > "Everything the load balancer knows about itself is a Prometheus metric — health,
@@ -147,10 +157,12 @@ Highlight these lines on screen:
 
 ---
 
+
+
 ## 7. The full stack with dashboards (2 minutes) — the visual finale
 
 This is the best single thing to show if you only have time for one part. It's
-`docker compose` — backends + GoBalancer + steady traffic + Prometheus + Grafana,
+`docker compose` — backends + LoadGate + steady traffic + Prometheus + Grafana,
 all wired.
 
 ```bash
@@ -159,12 +171,14 @@ docker compose up --build      # add -d to background it
 
 Then open in the browser:
 
-| What | URL | Note |
-|------|-----|------|
-| Grafana dashboard | http://localhost:3000 | anonymous admin, no login |
-| Prometheus | http://localhost:9090 | run a query, e.g. `gobalancer_backend_up` |
-| The proxy itself | http://localhost:8080 | curl it / refresh |
-| Raw metrics | http://localhost:9095/metrics | |
+
+| What              | URL                                                            | Note                                      |
+| ----------------- | -------------------------------------------------------------- | ----------------------------------------- |
+| Grafana dashboard | [http://localhost:3000](http://localhost:3000)                 | anonymous admin, no login                 |
+| Prometheus        | [http://localhost:9090](http://localhost:9090)                 | run a query, e.g. `loadgate_backend_up` |
+| The proxy itself  | [http://localhost:8080](http://localhost:8080)                 | curl it / refresh                         |
+| Raw metrics       | [http://localhost:9095/metrics](http://localhost:9095/metrics) |                                           |
+
 
 There's already a `load` container hammering the proxy, so the Grafana panels are
 **live the moment it's up**.
@@ -187,6 +201,8 @@ docker compose down
 
 ---
 
+
+
 ## 8. Resilience under real load — the chaos test (1–2 minutes)
 
 If you want to prove it's not just a happy-path toy. This runs an open-loop constant-rate
@@ -197,6 +213,7 @@ bash test/chaos/run.sh
 ```
 
 Then show the verdict — it asserts three things and prints PASS/FAIL:
+
 - **chaos actually happened** (eviction count ≥ threshold — no silent no-op pass)
 - **failover was fast** (no long window of total failure)
 - **no goroutine leak** after backends churn
@@ -209,6 +226,8 @@ Point at `docs/chaos-testing.md` for the methodology (open-loop load, avoiding
 coordinated omission).
 
 ---
+
+
 
 ## 9. Performance numbers (30 seconds — talk, don't run live)
 
@@ -224,6 +243,8 @@ Don't run benchmarks live (too slow / noisy). Instead open `docs/benchmark.md` a
 
 ---
 
+
+
 ## 10. Wrap-up (30 seconds)
 
 Recap the checklist you just demonstrated:
@@ -236,11 +257,14 @@ Recap the checklist you just demonstrated:
 - ✅ Chaos-tested and profiled — measured, not assumed
 
 Then point at the report/docs:
+
 - `README.md` — features + quick start
 - `docs/` — benchmark, profiling, chaos-testing, project report
 - `docs/project-report/` (final report PDF) — the full write-up
 
 ---
+
+
 
 ## Quick reference — every command in one place
 
@@ -248,7 +272,7 @@ Then point at the report/docs:
 # build & sanity
 make build
 make ci
-./bin/gobalancer check -c configl7.example.yaml
+./bin/loadgate check -c configl7.example.yaml
 
 # backends (configured via env vars: NAME / PORT / DELAY)
 NAME=b1 PORT=9001 go run ./testbackend &
@@ -256,7 +280,7 @@ NAME=b2 PORT=9002 go run ./testbackend &
 NAME=b3 PORT=9003 go run ./testbackend &
 
 # run the proxy (foreground, readable logs)
-./bin/gobalancer run -c configl7.example.yaml -log-format text
+./bin/loadgate run -c configl7.example.yaml -log-format text
 
 # traffic
 for i in $(seq 1 9); do curl -s http://127.0.0.1:8080/; echo; done
@@ -266,10 +290,10 @@ curl -s http://127.0.0.1:9002/toggle    # b2 unhealthy → leaves the rotation
 curl -s http://127.0.0.1:9002/toggle    # b2 healthy   → returns to rotation
 
 # live reload
-kill -HUP $(pgrep -f 'bin/gobalancer run')
+kill -HUP $(pgrep -f 'bin/loadgate run')
 
 # metrics
-curl -s http://127.0.0.1:9095/metrics | grep gobalancer_
+curl -s http://127.0.0.1:9095/metrics | grep loadgate_
 
 # full stack + dashboards
 docker compose up --build
@@ -287,17 +311,19 @@ bash test/chaos/run.sh
 
 ---
 
+
+
 ## If something breaks live (recovery moves)
 
-- **Port already in use** → `pkill -f testbackend`, `pkill -f 'bin/gobalancer'`, retry.
+- **Port already in use** → `pkill -f testbackend`, `pkill -f 'bin/loadgate'`, retry.
 - **Backend won't start** → it's configured by env vars, not flags:
-  `NAME=b2 PORT=9002 go run ./testbackend &`. Or use the Docker stack (Part 7).
+`NAME=b2 PORT=9002 go run ./testbackend &`. Or use the Docker stack (Part 7).
 - **Nothing on :8080** → check T1 logs; the proxy probably failed config validation.
-  Run `./bin/gobalancer check -c <file>` to see the error.
+Run `./bin/loadgate check -c <file>` to see the error.
 - **Docker slow to build** → run `docker compose up --build` once *before* the demo so
-  images are cached.
+images are cached.
 - **Grafana empty** → give it ~15s to scrape; confirm the `load` container is running
-  (`docker compose ps`).
+(`docker compose ps`).
 
 **Demo order if you're short on time:** Part 7 (Docker + Grafana) alone tells the whole
 story visually. If you have a terminal-only environment, do Parts 3 → 4 → 5.

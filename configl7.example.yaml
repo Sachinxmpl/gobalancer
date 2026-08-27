@@ -3,7 +3,7 @@
 mode: l7
 listen: "0.0.0.0:8080"
 
-balancer: round_robin
+balancer: consistent_hash
 
 timeouts:
   dial: 300ms

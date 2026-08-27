@@ -1,23 +1,23 @@
-File: gobalancer
+File: loadgate
 Build ID: 5a6a7a4d1855a0a9b02d6e6cfbb5336c091cea4a
 Type: goroutine
 Time: 2026-08-24 18:49:28 +0545
 Showing nodes accounting for 67, 98.53% of 68 total
       flat  flat%   sum%        cum   cum%
         63 92.65% 92.65%         63 92.65%  runtime.gopark
-         1  1.47% 94.12%          1  1.47%  github.com/Sachinxmpl/gobalancer/internal/proxy/l7.stripHopByHop
+         1  1.47% 94.12%          1  1.47%  github.com/Sachinxmpl/loadgate/internal/proxy/l7.stripHopByHop
          1  1.47% 95.59%          1  1.47%  runtime.goroutineProfileWithLabels
          1  1.47% 97.06%          1  1.47%  runtime.notetsleepg
          1  1.47% 98.53%          1  1.47%  syscall.Syscall
          0     0% 98.53%         44 64.71%  bufio.(*Reader).Peek
          0     0% 98.53%         44 64.71%  bufio.(*Reader).fill
-         0     0% 98.53%          1  1.47%  github.com/Sachinxmpl/gobalancer/internal/debug.(*Server).Start.func1
-         0     0% 98.53%          2  2.94%  github.com/Sachinxmpl/gobalancer/internal/health.(*Manager).Sync.func1
-         0     0% 98.53%          2  2.94%  github.com/Sachinxmpl/gobalancer/internal/health.(*Manager).probeLoop
-         0     0% 98.53%          1  1.47%  github.com/Sachinxmpl/gobalancer/internal/metrics.(*Server).Start.func1
-         0     0% 98.53%          1  1.47%  github.com/Sachinxmpl/gobalancer/internal/proxy/l7.(*Server).ServeHTTP
-         0     0% 98.53%          1  1.47%  github.com/Sachinxmpl/gobalancer/internal/proxy/l7.(*Server).Start.func2
-         0     0% 98.53%          1  1.47%  github.com/Sachinxmpl/gobalancer/internal/proxy/l7.(*Server).forwardOnce
+         0     0% 98.53%          1  1.47%  github.com/Sachinxmpl/loadgate/internal/debug.(*Server).Start.func1
+         0     0% 98.53%          2  2.94%  github.com/Sachinxmpl/loadgate/internal/health.(*Manager).Sync.func1
+         0     0% 98.53%          2  2.94%  github.com/Sachinxmpl/loadgate/internal/health.(*Manager).probeLoop
+         0     0% 98.53%          1  1.47%  github.com/Sachinxmpl/loadgate/internal/metrics.(*Server).Start.func1
+         0     0% 98.53%          1  1.47%  github.com/Sachinxmpl/loadgate/internal/proxy/l7.(*Server).ServeHTTP
+         0     0% 98.53%          1  1.47%  github.com/Sachinxmpl/loadgate/internal/proxy/l7.(*Server).Start.func2
+         0     0% 98.53%          1  1.47%  github.com/Sachinxmpl/loadgate/internal/proxy/l7.(*Server).forwardOnce
          0     0% 98.53%          3  4.41%  internal/poll.(*FD).Accept
          0     0% 98.53%         45 66.18%  internal/poll.(*FD).Read
          0     0% 98.53%         47 69.12%  internal/poll.(*pollDesc).wait

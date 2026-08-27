@@ -1,6 +1,6 @@
 # Benchmarks
 
-Reproducible measurements of GoBalancer — what it costs and how it behaves under load. Everything here can be regenerated with `make bench`.
+Reproducible measurements of LoadGate — what it costs and how it behaves under load. Everything here can be regenerated with `make bench`.
 
 ## How the benchmarks work
 
@@ -31,11 +31,11 @@ host:  Linux 7.0.11-76070011-generic x86_64
 
 ---
 
-## E1 — How much does GoBalancer cost?
+## E1 — How much does LoadGate cost?
 
-**Question.** When you put GoBalancer in front of a backend, how much latency does it add per request?
+**Question.** When you put LoadGate in front of a backend, how much latency does it add per request?
 
-**Method.** One backend with a fixed 5 ms delay. Send 1000 requests/second for 30 seconds, three ways: straight to the backend (the baseline), through GoBalancer in L7 (HTTP) mode, and through it in L4 (TCP) mode. Then compare.
+**Method.** One backend with a fixed 5 ms delay. Send 1000 requests/second for 30 seconds, three ways: straight to the backend (the baseline), through LoadGate in L7 (HTTP) mode, and through it in L4 (TCP) mode. Then compare.
 
 **Result.**
 
@@ -45,22 +45,22 @@ host:  Linux 7.0.11-76070011-generic x86_64
 | through L7 | 29011 | 100% | 967/s | 6.013 ms | 7.008 ms | 8.672 ms | 11.469 ms |
 | through L4 | 29293 | 100% | 976/s | 5.777 ms | 6.598 ms | 7.750 ms | 10.106 ms |
 
-Overhead added by GoBalancer (latency minus the direct baseline):
+Overhead added by LoadGate (latency minus the direct baseline):
 
 | mode | added at p50 | added at p99 |
 |------|-------------:|-------------:|
 | L4 | +0.19 ms | +0.13 ms |
 | L7 | +0.42 ms | +0.54 ms |
 
-**What it proves.** On this test workload, GoBalancer adds less than 0.5 ms of p50 latency per request. L4 adds 0.19 ms at p50 and 0.13 ms at p99, while L7 adds 0.42 ms at p50 and 0.54 ms at p99. All requests succeeded, and the p999 latency remained within 3 ms of the median in both proxy modes.
+**What it proves.** On this test workload, LoadGate adds less than 0.5 ms of p50 latency per request. L4 adds 0.19 ms at p50 and 0.13 ms at p99, while L7 adds 0.42 ms at p50 and 0.54 ms at p99. All requests succeeded, and the p999 latency remained within 3 ms of the median in both proxy modes.
 
 ---
 
 ## E2 — Does goroutine-per-connection hold up?
 
-**Question.** GoBalancer gives every connection its own goroutines. Does that model still work with thousands of connections at once, or does it fall apart?
+**Question.** LoadGate gives every connection its own goroutines. Does that model still work with thousands of connections at once, or does it fall apart?
 
-**Method.** Run GoBalancer in L4 mode in front of a backend that hangs on every request, so connections stay open. Open a growing number of connections at once — 100 up to 10,000 — and at each level read two numbers straight off the balancer's `/metrics`: its live goroutine count (`go_goroutines`) and its memory use (`process_resident_memory_bytes`). L4 is used here because its byte-relay has no HTTP-level timeout, so the slow backend keeps every connection parked.
+**Method.** Run LoadGate in L4 mode in front of a backend that hangs on every request, so connections stay open. Open a growing number of connections at once — 100 up to 10,000 — and at each level read two numbers straight off the balancer's `/metrics`: its live goroutine count (`go_goroutines`) and its memory use (`process_resident_memory_bytes`). L4 is used here because its byte-relay has no HTTP-level timeout, so the slow backend keeps every connection parked.
 
 **Result.**
 
@@ -84,7 +84,7 @@ Every connection was established; none failed.
 
 **Question.** When one backend is slow, does the choice of balancing algorithm actually matter?
 
-**Method.** Three backends: two fast (5 ms) and one slow (150 ms). Send 1000 requests/second for 30 seconds through GoBalancer (L7), once with `round_robin` and once with `least_connections`, then compare the latencies. The slow backend is 150 ms (not slower) so it stays under the proxy's 300 ms response-header timeout and is not treated as failed.
+**Method.** Three backends: two fast (5 ms) and one slow (150 ms). Send 1000 requests/second for 30 seconds through LoadGate (L7), once with `round_robin` and once with `least_connections`, then compare the latencies. The slow backend is 150 ms (not slower) so it stays under the proxy's 300 ms response-header timeout and is not treated as failed.
 
 **Result.**
 
@@ -103,7 +103,7 @@ Both served every request successfully at ~960/s.
 
 **Question.** When one backend is removed, how many keys does consistent hashing move, compared with naive modulo-N hashing?
 
-**Method.** Map 100,000 keys across 10 backends using GoBalancer's consistent-hash ring, then drop each backend in turn and count how many keys change backend. Repeat with naive `hash(key) % N` for comparison. Averaging over all 10 possible single-backend drops removes the luck of which backend is dropped. Pure computation — no network or processes.
+**Method.** Map 100,000 keys across 10 backends using LoadGate's consistent-hash ring, then drop each backend in turn and count how many keys change backend. Repeat with naive `hash(key) % N` for comparison. Averaging over all 10 possible single-backend drops removes the luck of which backend is dropped. Pure computation — no network or processes.
 
 **Result.**
 
@@ -122,7 +122,7 @@ Ideal for 10 backends is 1/N = 10.0%.
 
 **Question.** When a backend is sick — accepting connections but not responding in time — does the health loop keep traffic away from it?
 
-**Method.** Three backends: two healthy (5 ms) and one sick (60 s delay, past the proxy's 300 ms header timeout, so every request to it times out). Send 1000 requests/second for 30 seconds through GoBalancer (L7, round_robin), once with the passive path enabled (`fall = 3`) and once with it disabled (`fall = 1000000`, i.e. active-only). Round-robin is used so the health loop is the only mechanism that can route around the sick backend.
+**Method.** Three backends: two healthy (5 ms) and one sick (60 s delay, past the proxy's 300 ms header timeout, so every request to it times out). Send 1000 requests/second for 30 seconds through LoadGate (L7, round_robin), once with the passive path enabled (`fall = 3`) and once with it disabled (`fall = 1000000`, i.e. active-only). Round-robin is used so the health loop is the only mechanism that can route around the sick backend.
 
 **Result.**
 
@@ -133,7 +133,7 @@ Ideal for 10 backends is 1/N = 10.0%.
 
 Both served every request successfully at ~965/s.
 
-**What it proves.** With one sick backend and round-robin balancing, enabling the passive path reduces mean latency from 106 ms to 8.3 ms and p90 from 307 ms to 6.7 ms. With the passive path disabled, round-robin sends approximately one-third of requests to the sick backend; each times out after 300 ms and is retried, so a third of all requests are slow for the entire run. With the passive path enabled, the sick backend is evicted after 3 failures and traffic goes only to the healthy backends. In GoBalancer the passive path is the only mechanism that evicts a backend — the active prober only readmits — so active-only means no eviction at all. The passive+active p999 of 308 ms reflects brief flapping: the active prober's TCP-only probe succeeds against the sick backend (it accepts connections), readmitting it momentarily before the passive path evicts it again.
+**What it proves.** With one sick backend and round-robin balancing, enabling the passive path reduces mean latency from 106 ms to 8.3 ms and p90 from 307 ms to 6.7 ms. With the passive path disabled, round-robin sends approximately one-third of requests to the sick backend; each times out after 300 ms and is retried, so a third of all requests are slow for the entire run. With the passive path enabled, the sick backend is evicted after 3 failures and traffic goes only to the healthy backends. In LoadGate the passive path is the only mechanism that evicts a backend — the active prober only readmits — so active-only means no eviction at all. The passive+active p999 of 308 ms reflects brief flapping: the active prober's TCP-only probe succeeds against the sick backend (it accepts connections), readmitting it momentarily before the passive path evicts it again.
 
 ## Profiling
 
@@ -141,4 +141,4 @@ Where the CPU and memory actually go under load — CPU, heap, and goroutine pro
 
 ## Limitations
 
-All traffic runs on a single machine over loopback. This measures GoBalancer's own overhead — CPU and memory — not real-world network behaviour. On a real network the round-trip time between machines dwarfs the sub-millisecond cost measured here. Read these as "how much does the balancer add," not "how fast is a request in production."
+All traffic runs on a single machine over loopback. This measures LoadGate's own overhead — CPU and memory — not real-world network behaviour. On a real network the round-trip time between machines dwarfs the sub-millisecond cost measured here. Read these as "how much does the balancer add," not "how fast is a request in production."

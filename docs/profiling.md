@@ -1,6 +1,6 @@
 # Profiling
 
-This document shows where GoBalancer spends CPU time and heap memory under load, using Go's built-in `pprof` profiler.
+This document shows where LoadGate spends CPU time and heap memory under load, using Go's built-in `pprof` profiler.
 
 The profiling results complement the [benchmarks](benchmark.md):
 
@@ -9,7 +9,7 @@ The profiling results complement the [benchmarks](benchmark.md):
 
 ## How to reproduce
 
-GoBalancer exposes pprof on a separate, localhost-only debug port. Profiling is disabled by default and enabled with the `-debug-addr` flag.
+LoadGate exposes pprof on a separate, localhost-only debug port. Profiling is disabled by default and enabled with the `-debug-addr` flag.
 
 To capture the complete profile set:
 
@@ -23,7 +23,7 @@ The script starts two backends and the balancer (with `-debug-addr 127.0.0.1:606
 - `heap.prof` — a snapshot of live memory
 - `goroutine.prof` — a snapshot of every goroutine
 
-Profiles can be inspected with: `go tool pprof -top bin/gobalancer docs/profiles/cpu.prof`, or `go tool pprof -http=:8081 bin/gobalancer docs/profiles/cpu.prof` for a flame graph.
+Profiles can be inspected with: `go tool pprof -top bin/loadgate docs/profiles/cpu.prof`, or `go tool pprof -http=:8081 bin/loadgate docs/profiles/cpu.prof` for a flame graph.
 
 ## Environment
 
@@ -47,7 +47,7 @@ Two measurements are useful:
 - Flat time — time spent directly inside the function itself.
 - Cumulative time — time spent in the function plus functions it calls.
 
-**Result.** During the 30-second capture, GoBalancer consumed approximately 25.8 CPU-seconds, equivalent to about 0.86 of one CPU core on average.
+**Result.** During the 30-second capture, LoadGate consumed approximately 25.8 CPU-seconds, equivalent to about 0.86 of one CPU core on average.
 
 The largest flat CPU consumers were:
 
@@ -68,7 +68,7 @@ Grouped by area (cumulative time):
 | HTTP header parsing | ~4% | `readMIMEHeader`, `CanonicalMIMEHeaderKey` |
 | body copy | ~2.5% | `io.copyBuffer`, `memmove` |
 
-GoBalancer's own functions appear prominently in cumulative time:
+LoadGate's own functions appear prominently in cumulative time:
 - ServeHTTP — 17%
 - forwardOnce — 16%
 
@@ -102,7 +102,7 @@ The profile shows no significant accumulation of live heap attributable to reque
 
 The largest allocation, the pprof gzip buffer, is an artifact of profiling itself: fetching a profile over HTTP causes the profile response to be compressed and temporarily allocates memory for that operation.
 
-Therefore, it should not be interpreted as normal GoBalancer workload memory.
+Therefore, it should not be interpreted as normal LoadGate workload memory.
 
 The result is also consistent with the E2 connection-scaling benchmark, which showed that 10,000 live connections remained below 200 MB of process memory.
 
@@ -139,7 +139,7 @@ The goroutine profile is a point-in-time snapshot, so it should be treated as su
 ---
 
 ## Verdict
-For this workload, GoBalancer shows the expected profile of a healthy network proxy:
+For this workload, LoadGate shows the expected profile of a healthy network proxy:
 
 - CPU time is dominated by socket I/O and runtime scheduling.
 - The proxy uses less than one CPU core for approximately 3,000 requests/second.
@@ -149,8 +149,8 @@ For this workload, GoBalancer shows the expected profile of a healthy network pr
 - No unexpected goroutine accumulation was visible in the captured snapshot.
 - No obvious CPU hot spot, runaway allocation, or goroutine leak was identified.
 
-Together with the benchmark and chaos-test results, the profile provides evidence that GoBalancer's resource usage is consistent with its intended design.
+Together with the benchmark and chaos-test results, the profile provides evidence that LoadGate's resource usage is consistent with its intended design.
 
 ## Limitations
 
-The load generator, not the proxy, was the bottleneck, so these profiles show where CPU and memory go — not GoBalancer's maximum throughput. Responses were a few bytes, which understates byte-copying relative to a large-payload workload. All traffic was loopback on one machine.
+The load generator, not the proxy, was the bottleneck, so these profiles show where CPU and memory go — not LoadGate's maximum throughput. Responses were a few bytes, which understates byte-copying relative to a large-payload workload. All traffic was loopback on one machine.

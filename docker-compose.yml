@@ -20,7 +20,7 @@ services:
     environment: { NAME: b3, PORT: "9003", DELAY: "20ms" }   # slower: fewer least-conns picks
     networks: [lbnet]
 
-  gobalancer:
+  loadgate:
     build:
       context: .
       dockerfile: Dockerfile
@@ -43,10 +43,10 @@ services:
   # Steady traffic so the dashboard is live the moment the stack is up.
   load:
     image: alpine:3.20
-    depends_on: [gobalancer]
+    depends_on: [loadgate]
     command: >
       sh -c "apk add --no-cache curl >/dev/null 2>&1;
-             while true; do curl -s -o /dev/null http://gobalancer:8080/ || true; done"
+             while true; do curl -s -o /dev/null http://loadgate:8080/ || true; done"
     networks: [lbnet]
 
   prometheus:
@@ -54,7 +54,7 @@ services:
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports: ["9090:9090"]
-    depends_on: [gobalancer]
+    depends_on: [loadgate]
     networks: [lbnet]
 
   grafana:

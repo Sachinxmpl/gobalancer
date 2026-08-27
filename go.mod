@@ -1,4 +1,4 @@
-module github.com/Sachinxmpl/gobalancer
+module github.com/Sachinxmpl/loadgate
 
 go 1.26.5
 

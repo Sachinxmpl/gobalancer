@@ -3,8 +3,8 @@ package reload
 import (
 	"log/slog"
 
-	"github.com/Sachinxmpl/gobalancer/internal/config"
-	"github.com/Sachinxmpl/gobalancer/internal/health"
+	"github.com/Sachinxmpl/loadgate/internal/config"
+	"github.com/Sachinxmpl/loadgate/internal/health"
 )
 
 // Loads and validates the config at the path. If valid, swapt it into store and reconciles health

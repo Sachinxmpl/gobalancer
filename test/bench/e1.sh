@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# E1 - How much does GoBalancer cost?
-# Compares latency of hitting a backend directly vs through GoBalancer (L7 and L4).
+# E1 - How much does LoadGate cost?
+# Compares latency of hitting a backend directly vs through LoadGate (L7 and L4).
 # Runs everything as bare host processes over loopback, so we measure the balancer,
 # not Docker's network.
 set -euo pipefail
@@ -9,7 +9,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OUT="$ROOT/test/bench/results"
 mkdir -p "$OUT"
 
-GOBAL="$ROOT/bin/gobalancer"
+GOBAL="$ROOT/bin/loadgate"
 BACKEND="$ROOT/bin/testbackend"
 LOADGEN="$ROOT/bin/loadgen"
 REPORT="$ROOT/bin/report"
@@ -21,7 +21,7 @@ DURATION="${DURATION:-30s}"
 WARMUP="${WARMUP:-3s}"
 
 echo "building binaries..."
-go build -o "$GOBAL"   ./cmd/gobalancer
+go build -o "$GOBAL"   ./cmd/loadgate
 go build -o "$BACKEND" ./testbackend
 go build -o "$LOADGEN" ./test/loadgen
 go build -o "$REPORT"  ./test/bench/report

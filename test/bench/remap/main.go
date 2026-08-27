@@ -5,13 +5,13 @@ import (
 	"hash/fnv"
 	"os"
 
-	"github.com/Sachinxmpl/gobalancer/internal/balancer"
-	"github.com/Sachinxmpl/gobalancer/internal/config"
+	"github.com/Sachinxmpl/loadgate/internal/balancer"
+	"github.com/Sachinxmpl/loadgate/internal/config"
 )
 
 // remap answers "is the 1/N remap claim real?" for consistent hashing.
 // It maps many keys across N backends, then drops each backend in turn and counts how
-// many keys change backend -- for GoBalancer's consistent-hash ring vs naive modulo-N.
+// many keys change backend -- for LoadGate's consistent-hash ring vs naive modulo-N.
 // Averaging over every possible single drop makes the result representative (not luck of
 // which backend we dropped), and the average is exactly 1/N only if nothing but the
 // dropped backend's own keys move.
@@ -24,7 +24,7 @@ func main() {
 	full := makePool(numBackends)
 	keys := makeKeys(numKeys)
 
-	// Consistent hash: the real ring GoBalancer uses (production vnode count).
+	// Consistent hash: the real ring LoadGate uses (production vnode count).
 	ch, err := balancer.New(config.AlgConsistentHash, nil)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

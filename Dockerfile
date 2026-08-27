@@ -3,9 +3,9 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /gobalancer ./cmd/gobalancer
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /loadgate ./cmd/loadgate
 
 
 FROM scratch
-COPY --from=builder /gobalancer /gobalancer
-ENTRYPOINT ["/gobalancer"]
+COPY --from=builder /loadgate /loadgate
+ENTRYPOINT ["/loadgate"]

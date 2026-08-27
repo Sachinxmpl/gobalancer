@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # E2 - Does goroutine-per-connection hold up?
-# Holds a growing number of live connections through GoBalancer (L4) and records its  goroutine count and resident memory at each level. Runs as bare host processes.
+# Holds a growing number of live connections through LoadGate (L4) and records its  goroutine count and resident memory at each level. Runs as bare host processes.
 
 set -euo pipefail
 
@@ -9,7 +9,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OUT="$ROOT/test/bench/results"
 mkdir -p "$OUT"
 
-GOBAL="$ROOT/bin/gobalancer"
+GOBAL="$ROOT/bin/loadgate"
 BACKEND="$ROOT/bin/testbackend"
 HOLDER="$ROOT/bin/connhold"
 
@@ -21,7 +21,7 @@ SETTLE="${SETTLE:-5}"
 LEVELS="${LEVELS:-100 500 1000 2000 5000 10000}"
 
 echo "building binaries..."
-go build -o "$GOBAL"   ./cmd/gobalancer
+go build -o "$GOBAL"   ./cmd/loadgate
 go build -o "$BACKEND" ./testbackend
 go build -o "$HOLDER"  ./test/bench/connhold
 

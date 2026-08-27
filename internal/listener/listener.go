@@ -10,12 +10,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Sachinxmpl/gobalancer/internal/balancer"
-	"github.com/Sachinxmpl/gobalancer/internal/config"
-	"github.com/Sachinxmpl/gobalancer/internal/health"
-	"github.com/Sachinxmpl/gobalancer/internal/metrics"
-	"github.com/Sachinxmpl/gobalancer/internal/proxy"
-	"github.com/Sachinxmpl/gobalancer/internal/ratelimit"
+	"github.com/Sachinxmpl/loadgate/internal/balancer"
+	"github.com/Sachinxmpl/loadgate/internal/config"
+	"github.com/Sachinxmpl/loadgate/internal/health"
+	"github.com/Sachinxmpl/loadgate/internal/metrics"
+	"github.com/Sachinxmpl/loadgate/internal/proxy"
+	"github.com/Sachinxmpl/loadgate/internal/ratelimit"
 )
 
 const (

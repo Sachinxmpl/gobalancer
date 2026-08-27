@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Sachinxmpl/gobalancer/internal/config"
-	"github.com/Sachinxmpl/gobalancer/internal/health"
+	"github.com/Sachinxmpl/loadgate/internal/config"
+	"github.com/Sachinxmpl/loadgate/internal/health"
 )
 
 var ErrNoBackends = errors.New("no backends available")

@@ -2,13 +2,13 @@
 
 A load balancer's job is simple: **when a backend server dies, users should see little or no disruption.**
 
-This test verifies that GoBalancer maintains service availability by intentionally killing backend servers while real traffic continues to flow through the proxy.
+This test verifies that LoadGate maintains service availability by intentionally killing backend servers while real traffic continues to flow through the proxy.
 
 ## The setup
 
 Everything runs in Docker (`docker-compose.yml`):
 
-- **3 backend servers** behind GoBalancer on port 8080 (one is slow on purpose).
+- **3 backend servers** behind LoadGate on port 8080 (one is slow on purpose).
 - A **load generator** (`test/chaos/loadgen`) sending 500 requests/second for 5 minutes.
 - A **kill loop** (`test/chaos/run.sh`) that kills one backend for 15s, restarts it, and repeats — 10 times.
 

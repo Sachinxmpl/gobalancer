@@ -9,7 +9,7 @@ import (
 
 func main() {
 	if err := run(os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, "gobalancer:", err)
+		fmt.Fprintln(os.Stderr, "loadgate:", err)
 		os.Exit(1)
 	}
 }
@@ -36,14 +36,14 @@ func run(args []string) error {
 
 func usage(w io.Writer) {
 	sample := `
-gobalancer - L4/L7 load balancer
+loadgate - L4/L7 load balancer
 
 Build:
 	make build
 
 Usage:
-  ./bin/gobalancer check -c <file>   validate a config file and exit
-  ./bin/gobalancer run   -c <file>   serve until interrupted
+  ./bin/loadgate check -c <file>   validate a config file and exit
+  ./bin/loadgate run   -c <file>   serve until interrupted
 
 Flags:
   -c string             path to config file (default "config.yaml")

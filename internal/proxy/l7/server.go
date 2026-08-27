@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Sachinxmpl/gobalancer/internal/balancer"
-	"github.com/Sachinxmpl/gobalancer/internal/config"
-	"github.com/Sachinxmpl/gobalancer/internal/health"
-	"github.com/Sachinxmpl/gobalancer/internal/metrics"
-	"github.com/Sachinxmpl/gobalancer/internal/ratelimit"
+	"github.com/Sachinxmpl/loadgate/internal/balancer"
+	"github.com/Sachinxmpl/loadgate/internal/config"
+	"github.com/Sachinxmpl/loadgate/internal/health"
+	"github.com/Sachinxmpl/loadgate/internal/metrics"
+	"github.com/Sachinxmpl/loadgate/internal/ratelimit"
 )
 
 // readHeaderTimeout bounds how long a client may take to send its request headers.

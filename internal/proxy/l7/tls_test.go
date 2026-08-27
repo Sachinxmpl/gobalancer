@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Sachinxmpl/gobalancer/internal/config"
+	"github.com/Sachinxmpl/loadgate/internal/config"
 )
 
 // Build an in-memory cert valid for 127.0.0.1

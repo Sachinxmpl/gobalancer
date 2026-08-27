@@ -1,6 +1,6 @@
 {
-  "title": "GoBalancer",
-  "uid": "gobalancer",
+  "title": "LoadGate",
+  "uid": "loadgate",
   "schemaVersion": 39,
   "timezone": "browser",
   "refresh": "5s",
@@ -34,7 +34,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (backend) (rate(gobalancer_requests_total[1m]))",
+          "expr": "sum by (backend) (rate(loadgate_requests_total[1m]))",
           "legendFormat": "{{backend}}"
         }
       ]
@@ -54,7 +54,7 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, backend) (rate(gobalancer_request_duration_seconds_bucket[1m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, backend) (rate(loadgate_request_duration_seconds_bucket[1m])))",
           "legendFormat": "{{backend}}"
         }
       ]
@@ -91,7 +91,7 @@
       },
       "targets": [
         {
-          "expr": "gobalancer_backend_up",
+          "expr": "loadgate_backend_up",
           "legendFormat": "{{backend}}"
         }
       ]
@@ -111,7 +111,7 @@
       },
       "targets": [
         {
-          "expr": "gobalancer_active_connections",
+          "expr": "loadgate_active_connections",
           "legendFormat": "{{backend}}"
         }
       ]
@@ -161,7 +161,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (to) (increase(gobalancer_health_transitions_total[1m]))",
+          "expr": "sum by (to) (increase(loadgate_health_transitions_total[1m]))",
           "legendFormat": "{{to}}"
         }
       ]

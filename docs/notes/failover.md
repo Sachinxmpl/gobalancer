@@ -16,7 +16,7 @@ Clients drive steady traffic while all backends are healthy (warmup, zero errors
 asserted). At T the first backend's listener is closed. delta = (last client-visible
 error after T) − T.
 A client-visible error is a **missing echo**, not a dial failure:
-GoBalancer accepts the client, then can't reach the dead backend, so it closes the
+LoadGate accepts the client, then can't reach the dead backend, so it closes the
 connection without echoing.
 
 ## Measured

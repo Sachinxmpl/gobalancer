@@ -30,34 +30,34 @@ func New(src StateSource) *Metrics {
 		registry: reg,
 		requests: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "gobalancer_requests_total",
+				Name: "loadgate_requests_total",
 				Help: "Requests by backend and status class",
 			},
 			[]string{"backend", "status_class"},
 		),
 		duration: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
-				Name: "gobalancer_request_duration_seconds",
+				Name: "loadgate_request_duration_seconds",
 				Help: "Request duration by backend",
 			},
 			[]string{"backend"},
 		),
 		transitions: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "gobalancer_health_transitions_total",
+				Name: "loadgate_health_transitions_total",
 				Help: "Health phase transitions",
 			},
 			[]string{"backend", "to"},
 		),
 		rejections: prometheus.NewCounter(
 			prometheus.CounterOpts{
-				Name: "gobalancer_ratelimit_rejections_total",
+				Name: "loadgate_ratelimit_rejections_total",
 				Help: "Requests rejected by rate limiting",
 			},
 		),
 		reloads: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "gobalancer_reload_total",
+				Name: "loadgate_reload_total",
 				Help: "Config reload outcomes",
 			},
 			[]string{"results"},
