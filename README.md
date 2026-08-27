@@ -1,49 +1,24 @@
 # LoadGate
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)](https://go.dev)
+[![CI](https://github.com/Sachinxmpl/loadgate/actions/workflows/ci.yml/badge.svg)](https://github.com/Sachinxmpl/loadgate/actions/workflows/ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Sachinxmpl/loadgate)](https://goreportcard.com/report/github.com/Sachinxmpl/loadgate)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
 
-TCP & HTTP(S) proxying · four balancing algorithms · two-plane health checking · automatic failover · hot config reload · TLS termination · rate limiting · Prometheus metrics.
+LoadGate is a modern L4/L7 reverse proxy and load balancer written in Go.
 
-## Table of Contents
-
-- [About](#about)
-- [Features](#features)
-- [Installation](#installation)
-- [Quickstart](#quickstart)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Observability](#observability)
-- [Benchmarks](#benchmarks)
-- [Development](#development)
-- [Contributing](#contributing)
-- [Possible Extensions](#possible-extensions)
-- [Documentation](#documentation)
-- [License](#license)
-- [Acknowledgements](#acknowledgements)
-
-## About
-
-LoadGate sits in front of a pool of backend servers and spreads client traffic across them, giving a service aggregate capacity, high availability, and a single stable address. It runs in two modes, chosen per instance:
-
-- **L4 (TCP)** — a transparent byte-stream relay, compatible with any TCP-based protocol.
-- **L7 (HTTP/HTTPS)** — a full reverse proxy that routes by path and rewrites headers.
-
-Under the hood, a lock-free data plane serves traffic from immutable config snapshots, so reloads and health changes never block the request path. It is built against the Go standard library with just three runtime dependencies, and **every design decision is backed by a benchmark, a profile, or a test** — the numbers in the [Benchmarks](#benchmarks) section are all reproducible with a single command.
+**Sub-0.5 ms** proxy overhead, linear scaling to **10,000** concurrent connections under **200 MB**, and automatic failover that never drops a request — every number [measured](docs/benchmark.md).
 
 ## Features
 
-| | |
-|---|---|
-| **L4 & L7 modes** | Raw TCP relay or full HTTP(S) reverse proxy, selected per instance. |
-| **4 algorithms** | Round-robin, smooth weighted round-robin, least-connections, and consistent hashing (150 vnodes). |
-| **Two-plane health checks** | Passive eviction on real-traffic failures + active probing for readmission — *fail fast, recover carefully*. |
-| **Automatic failover** | Failed idempotent requests are retried on a healthy backend, so clients never see a dying backend. |
-| **TLS termination** | HTTPS with hot certificate rotation — swap certs via a reload, no restart. |
-| **Hot config reload** | `SIGHUP` validate-before-swap: a broken config can never take down a running server. |
-| **Rate limiting** | Global and per-client token buckets, reject-don't-queue, LRU-bounded. |
-| **Observability** | Prometheus metrics on a separate port, a ready-made Grafana dashboard, and pprof profiling. |
+- **L4 and L7 modes** — raw TCP relay or full HTTP(S) reverse proxy, selected per instance.
+- **Four algorithms** — round-robin, smooth weighted round-robin, least-connections, and consistent hashing (150 vnodes).
+- **Two-plane health checking** — passive eviction on real-traffic failures, active probing for readmission. *Fail fast, recover carefully.*
+- **Automatic failover** — idempotent requests that fail are retried on a healthy backend.
+- **TLS termination** — HTTPS with hot certificate rotation; swap certs on reload, no restart.
+- **Hot config reload** — `SIGHUP` validate-before-swap: a broken config can never take down a running server.
+- **Rate limiting** — global and per-client token buckets, reject-don't-queue, LRU-bounded.
+- **Observability** — Prometheus metrics on a separate port, provisioned Grafana dashboard, pprof profiling.
 
 ## Installation
 
@@ -102,17 +77,17 @@ kill -HUP $(pgrep loadgate)       # re-reads config; keeps the old one if the ne
 
 LoadGate is configured by a single YAML file. Top-level fields:
 
-| Field | Meaning |
-|-------|---------|
-| `mode` | `l4` (TCP relay) or `l7` (HTTP proxy) |
-| `listen` | address to bind, e.g. `0.0.0.0:8080` |
-| `balancer` | `round_robin`, `weighted_round_robin`, `least_connections`, or `consistent_hash` |
-| `tls` | optional `{ cert, key }` paths; presence enables HTTPS |
-| `timeouts` | `dial`, `read`, `write`, `idle`, `request`, `drain` |
-| `health` | `active: { interval, timeout, rise }`, `passive: { fall, cooldown }` |
-| `rate_limit` | `global_rps`, `per_client_rps` (`0` = unlimited) |
-| `routes` | L7 only: `{ match: { path_prefix }, pool }`, longest prefix wins |
-| `pools` | named lists of backends: `{ addr, weight }` |
+| Field | Type | Default | Meaning |
+|-------|------|---------|---------|
+| `mode` | string | *required* | `l4` (TCP relay) or `l7` (HTTP proxy) |
+| `listen` | string | *required* | address to bind, e.g. `0.0.0.0:8080` |
+| `balancer` | string | `round_robin` | `round_robin`, `weighted_round_robin`, `least_connections`, or `consistent_hash` |
+| `tls` | object | *disabled* | `{ cert, key }` paths; presence enables HTTPS |
+| `timeouts` | object | dial `2s`, read/write/request `30s`, idle `60s`, drain `15s` | connection and request deadlines |
+| `health` | object | active `{ interval 2s, timeout 500ms, rise 2 }`, passive `{ fall 3, cooldown 10s }` | probing/readmission and eviction thresholds |
+| `rate_limit` | object | `0` (unlimited) | `global_rps`, `per_client_rps` |
+| `routes` | list | *required for L7* | `{ match: { path_prefix }, pool }`, longest prefix wins |
+| `pools` | map | *required* | named lists of backends: `{ addr, weight }` (`weight` defaults `1`) |
 
 <details>
 <summary><b>Full annotated example</b></summary>
@@ -232,16 +207,9 @@ Contributions are welcome. To propose a change:
 
 Keep the dependency budget small (standard library first) and, in the spirit of this project, **back new behaviour with a test or a benchmark**.
 
-## Possible Extensions
-- HTTP-level health probes (detect backends that accept but don't serve)
-- SNI-based routing in L4 mode (route by TLS ClientHello, preserve end-to-end encryption)
-- HTTP/2 to backends and WebSocket/upgrade support in L7
-- Weighted least-connections
-- Saturation/max-throughput benchmarks with a stronger load generator
-
 ## Documentation
 
-- [Final report](docs/final-report.pdf) — the full project report (design, results, evaluation)
+- [Final report](docs/project-report/final-report.pdf) — the full project report (design, results, evaluation)
 - [Benchmarks](docs/benchmark.md) — the five experiments and their results
 - [Profiling](docs/profiling.md) — where CPU and memory go under load
 - [Chaos testing](docs/chaos-testing.md) — the failover / no-leak harness
